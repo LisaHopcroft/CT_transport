@@ -16,6 +16,6 @@ There are three phases to this project:
 
 The overarching aim is to define a workflow for incorporating geospatial information into our CT pipeline to characterise sites of interest and to present this data in an interactive way, using transport data as a proof-of-concept.  The longer term intention is that this workflow would be used as standard in our pipeline to evaluate whether geospatial data (e.g., deprivation indices) impacts on patient recruitment, retention and/or attendance.
 
-The ultimate aim is to use these these data and the resulting modelling techniques to ask the question _which patients are at a high risk of dropping out?_  If trials units can predict this with confidence then we may be able to intervene early and maintain participant retention.
+The ultimate aim is to use these these data and the resulting modelling techniques to ask the question _which patients are at high risk of dropping out?_  If trials units can predict this with confidence then we may be able to intervene early and maintain participant retention.
 
 Completed as part of the [Data Science Accelerator Programme](https://www.thedatalab.com/news/data-science-accelerator-programme/) 2020.
