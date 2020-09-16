@@ -3,7 +3,8 @@ library( magrittr )
 library( ggplot2 )
 library( stringr )
 library( leaflet )
-library( rgdal )
+
+load( "dat/20_random_postcodes.Rdat")
 
 centre_longitude  = postcode_holder %>% pull( longitude ) %>% mean
 centre_latitude   = postcode_holder %>% pull( latitude  ) %>% mean
@@ -33,29 +34,18 @@ centre_latitude   = postcode_holder %>% pull( latitude  ) %>% mean
 # leaflet(data = quakes[1:4,]) %>% addTiles() %>%
 #   addMarkers(~long, ~lat, icon = greenLeafIcon)
 
-postcode_areas = readOGR("/conf/Clinical_Trials_Unit/01 Projects/PROJECT_DSAP2020/6050105/postcode_polygons.gpkg", layer = "postcode_district")
-#postcode_areas = readOGR(dsn="Distribution", layer="Areas")
-layers <- ogrListLayers("../6050105/postcode_polygons.gpkg")
+### POSTCODE areas
 
-
-postcode_areas = spTransform(postcode_areas, CRS("+proj=longlat +datum=WGS84"))
-
-postcode_areas = subset(postcode_areas, grepl("PA", postcodes$pc_district))
-
-
-
-postcode_areas = readOGR(dsn="Distribution", layer="Areas")
 
 marker_palette = colorFactor( c("navy","red"),
                               domain = c("Hospital","Participant"))
-
 
 leaflet(postcode_holder) %>%
   setView( lng=centre_longitude,
            lat=centre_latitude,
            zoom = 10 ) %>%
-  addTiles() %>% 
-  #addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
+  #addTiles() %>% 
+  addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
   # addMarkers(~longitude,
   #            ~latitude,
   #            popup = ~as.character(id),

@@ -1,9 +1,9 @@
 library( dplyr    )
 library( magrittr )
+library( readr )
 library( ggplot2 )
 library( stringr )
 library( PostcodesioR )
-
 
 set.seed( "5482" )
 
@@ -72,13 +72,16 @@ postcode_holder = postcode_holder %>%
   mutate( group = ifelse( is.na(id), "Hospital", "Participant") )
 
 save( postcode_holder,
+      list_of_outcodes,
+      hospital_postcode,
+      hospital_postcode_information,
+      number_of_participants,
       file=sprintf( "dat/%d_random_postcodes.Rdat",
                     number_of_participants ) )
 
 postcode_holder %>% 
   filter( group == "Participant" ) %>% 
   write_csv( "dat/participants.csv" )
-
 
 postcode_holder %>% 
   filter( group == "Hospital" ) %>% 
