@@ -13,6 +13,9 @@ get_patient_distance = function ( id ) {
 ##### Processing #####
 ######################
 
+
+set.seed(5482)
+
 load( "dat/20_random_postcodes.Rdat" )
 
 patient_distance = rnorm( number_of_participants,
@@ -202,10 +205,12 @@ ggplot( data=trial_data.synthetic.LOADED,
 ### --------------------
 ### (1) How do I include a second variable when drawing from the
 ###     binary distribution (variable could be TRUE/FALSE) or
-###     ordinal (SIMD level)
+###     ordinal (SIMD level).
 ### (2) Informing the relationship between distance from trial
 ###     centre and the participant - how to choose the relationship?
 ###     (NB. I will look in the literature).
+### (3) Including postcode boundaries in leaflet - would like to try
+###     different presentations (e.g. hex)
 
 
 
