@@ -4,7 +4,7 @@ library( ggplot2 )
 library( stringr )
 library( leaflet )
 
-load( "dat/20_random_postcodes.Rdat")
+load( "dat/20_random-postcodes.Rdat")
 
 centre_longitude  = postcode_holder %>% pull( longitude ) %>% mean
 centre_latitude   = postcode_holder %>% pull( latitude  ) %>% mean

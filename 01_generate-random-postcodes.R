@@ -80,7 +80,7 @@ save( postcode_holder,
       hospital_postcode,
       hospital_postcode_information,
       number_of_participants,
-      file=sprintf( "dat/%d_random_postcodes.Rdat",
+      file=sprintf( "dat/%d_random-postcodes.Rdat",
                     number_of_participants ) )
 
 postcode_holder %>% 
