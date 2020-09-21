@@ -16,7 +16,7 @@ get_patient_distance = function ( id ) {
 
 set.seed(5482)
 
-load( "dat/20_random_postcodes.Rdat" )
+load( "dat/20_random-postcodes.Rdat" )
 
 patient_distance = rnorm( number_of_participants,
                           mean=25,
@@ -212,5 +212,8 @@ ggplot( data=trial_data.synthetic.LOADED,
 ### (3) Including postcode boundaries in leaflet - would like to try
 ###     different presentations (e.g. hex)
 
-
+save( trial_data.synthetic.LOADED,
+      trial_data.synthetic.STATIC,
+      file=sprintf( "dat/%d_synthetic-data.Rdat",
+                    number_of_participants ) )
 
