@@ -3,6 +3,10 @@ library( magrittr )
 library( readr )
 library( ggplot2 )
 library( stringr )
+### To install PostcodesioR
+### (1) In terminal: find /../miniconda3/* -name "libcurl.pc" 
+###     Find the pkgconfig entry, call it X
+### (2) In R: Sys.setenv(PKG_CONFIG_PATH = X )
 library( PostcodesioR )
 
 set.seed( "5482" )
