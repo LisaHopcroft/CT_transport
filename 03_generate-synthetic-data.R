@@ -1,13 +1,21 @@
+library( dplyr )
+library( magrittr )
 library( simstudy )
 library( sigmoid )
+library( ggplot2 )
 
 #####################
 ##### FUNCTIONS #####
 #####################
 
-get_patient_distance = function ( id ) {
-  return( patient_distance[id] ) 
+get_public_distance = function ( id ) {
+  return( public_distance[id] ) 
 }
+
+get_public_time = function ( id ) {
+  return( public_time[id] ) 
+}
+
 
 ######################
 ##### Processing #####
@@ -18,9 +26,13 @@ set.seed(5482)
 
 load( "dat/20_random-postcodes.Rdat" )
 
-patient_distance = rnorm( number_of_participants,
+public_distance = rnorm( number_of_participants,
                           mean=25,
                           sd=8 )
+
+public_time = public_distance + rnorm( number_of_participants,
+                                      mean=30,
+                                      sd=5 )
 
 ### Needing to add the attendance data now
 
@@ -85,9 +97,14 @@ trial_data.synthetic.STATIC = genData( number_of_participants,
 #####################################################################
 
 ### Generating distance information
-distance_definition = defDataAdd( varname = "distance",
-                                  dist    = "nonrandom",
-                                  formula = "get_patient_distance(idnum)" )
+public_distance_definition = defDataAdd( varname = "METRIC_public_distance",
+                                         dist    = "nonrandom",
+                                         formula = "get_patient_distance(idnum)" )
+
+### Generating distance information
+public_time_definition = defDataAdd( varname = "METRIC_public_time",
+                                     dist    = "nonrandom",
+                                     formula = "get_public_time(idnum)" )
 
 ### Let's say we know that the relationship between
 ### distance (x axis) and the likelihood of attendance
@@ -99,8 +116,10 @@ plot( -10:10, 1-sigmoid(-10:10) )
 ### function to define the binary distributions from
 ### which to sample our attendance data?
 
-trial_data.synthetic.LOADED = addColumns(distance_definition,
+trial_data.synthetic.LOADED = addColumns(public_distance_definition,
                                          trial_data.synthetic.STATIC)
+trial_data.synthetic.LOADED = addColumns(public_time_definition,
+                                         trial_data.synthetic.LOADED)
 ### Rescaling
 
 # r_min = 5
@@ -119,11 +138,11 @@ rescale = function(x,
 
 ### Rescale the distance  
 trial_data.synthetic.LOADED = trial_data.synthetic.LOADED %>%
-  mutate( distance_rescaled = rescale( distance ) )
+  mutate( public_distance_rescaled = rescale( public_distance ) )
 
 ### Calculate the resulting probability
 trial_data.synthetic.LOADED = trial_data.synthetic.LOADED %>%
-  mutate( parameter = 1-sigmoid(distance_rescaled) )
+  mutate( parameter = 1-sigmoid(public_distance_rescaled) )
 
 ### Rescale the probability
 trial_data.synthetic.LOADED = trial_data.synthetic.LOADED %>%
@@ -132,15 +151,15 @@ trial_data.synthetic.LOADED = trial_data.synthetic.LOADED %>%
 
 
 ggplot( data=trial_data.synthetic.LOADED,
-        aes(x=distance,
-            y=distance_rescaled)) +
+        aes(x=public_distance,
+            y=public_distance_rescaled)) +
   geom_point() +
   xlab( "original distance" ) +
   ylab( "scaled distance" ) +
   theme_bw()
 
 ggplot( data=trial_data.synthetic.LOADED,
-        aes(x=distance,
+        aes(x=public_distance,
             y=parameter)) +
   geom_point() +
   xlab( "original distance" ) +
@@ -148,7 +167,7 @@ ggplot( data=trial_data.synthetic.LOADED,
   theme_bw()
 
 ggplot( data=trial_data.synthetic.LOADED,
-        aes(x=distance_rescaled,
+        aes(x=public_distance_rescaled,
             y=parameter)) +
   geom_point() +
   xlab( "scaled distance" ) +
@@ -195,11 +214,11 @@ trial_data.synthetic.LOADED = trial_data.synthetic.LOADED %>%
 
 ggplot( data=trial_data.synthetic.LOADED,
         aes( x = attendance_T2.f,
-             y = distance )) + geom_boxplot()
+             y = public_distance )) + geom_boxplot()
 
 ggplot( data=trial_data.synthetic.LOADED,
         aes( x = attendance_T2_STATIC.f,
-             y = distance )) + geom_boxplot()
+             y = public_distance )) + geom_boxplot()
 
 ### Questions for Thanos
 ### --------------------
