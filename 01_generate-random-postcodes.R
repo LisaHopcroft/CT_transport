@@ -37,7 +37,7 @@ hospital_postcode_information = postcode_lookup( hospital_postcode )
 #   select( id, everything() )
 
 postcode_holder = tibble(
-  id = NA,
+  idnum = NA,
   outcode  = hospital_postcode_information$outcode,
   postcode = hospital_postcode_information$postcode,
   longitude = hospital_postcode_information$longitude,
@@ -59,7 +59,7 @@ for ( i in 1:number_of_participants ) {
   }
   
   postcode_holder = postcode_holder %>% 
-    add_row( id = i,
+    add_row( idnum = i,
              outcode  = this.outcode,
              postcode = this.postcode_information$postcode,
              longitude = this.postcode_information$longitude,
@@ -72,8 +72,8 @@ for ( i in 1:number_of_participants ) {
 }
 
 postcode_holder = postcode_holder %>%
-  arrange( id ) %>% 
-  mutate( group = ifelse( is.na(id), "Hospital", "Participant") )
+  arrange( idnum ) %>% 
+  mutate( group = ifelse( is.na(idnum), "Hospital", "Participant") )
 
 save( postcode_holder,
       list_of_outcodes,
