@@ -1,5 +1,8 @@
 # Project files (LH addition)
 .Rproj
+dat/*
+ref/*
+dev/*
 
 # History files
 .Rhistory

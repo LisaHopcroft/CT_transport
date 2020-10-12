@@ -6,7 +6,7 @@ library( purrr )
 
 ### Read in shapefiles, the output is an object of the class
 ### SpatialPolygonsDataFrame
-postcode.objects.in = readOGR( dsn = "NRS_shapefiles/spd-unit-boundaries-cut-19-1", layer = "PC_Cut_19_1" )
+postcode.objects.in = readOGR( dsn = "ref/NRS_shapefiles/spd-unit-boundaries-cut-19-1", layer = "PC_Cut_19_1" )
 ### Transform data in shapefile to the necessary format
 postcode.objects.sp = spTransform( postcode.objects.in, CRS( "+proj=longlat +datum=WGS84" ) )
 
