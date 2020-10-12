@@ -24,6 +24,7 @@ get_public_time = function ( id ) {
 
 set.seed(5482)
 
+load( "dat/00_PREPARATION.Rdat" )
 load( "dat/01_RANDOM-POSTCODES_n=2000.Rdat" )
 
 ### Random placeholder data for the time being.

@@ -7,6 +7,7 @@ library( leaflet )
 library( purrr )
 library( sp )
 
+load( "dat/00_PREPARATION.Rdat" )
 load( "dat/01_RANDOM-POSTCODES_n=2000.Rdat")
 
 postcode_holder = postcode_holder %>% 
@@ -17,7 +18,6 @@ centre_latitude   = postcode_holder %>% pull( latitude  ) %>% mean
 
 marker_palette = colorFactor( c("navy","red"),
                               domain = c("Hospital","Participant"))
-
 
 ### ============================================================= ###
 ### BASIC MAP (patients as points)                                ###
@@ -42,17 +42,6 @@ leaflet(postcode_holder) %>%
 ### AREA MAP (patients mapped to postcode areas)                  ###
 ### ============================================================= ###
 
-
-### Read in shapefiles, the output is an object of the class
-### SpatialPolygonsDataFrame
-postcode.objects.in = readOGR( dsn = "NRS_shapefiles/spd-unit-boundaries-cut-19-1", layer = "PC_Cut_19_1" )
-### Transform data in shapefile to the necessary format
-postcode.objects.sp = spTransform( postcode.objects.in, CRS( "+proj=longlat +datum=WGS84" ) )
-
-### Identify the postcode objects that we are interested in
-### and retain only the data in the SpatialPolygonsDataFrame that
-### is relevant for the areas of interest 
-postcode.objects.sp.outcodes = postcode.objects.sp$Postcode %>% map_chr( ~str_replace(.x, " .*", "" ) )
 postcode.objects = subset( postcode.objects.sp,
                            postcode.objects.sp.outcodes %in% list_of_outcodes )
 ### Set projection attributes

@@ -15,6 +15,7 @@ library( stringr  )
 library( leaflet  )
 library( purrr    )
 
+load( "dat/00_PREPARATION.Rdat" )
 load( "dat/01_RANDOM-POSTCODES_n=2000.Rdat")
 load( "dat/02_MAPPING-INFORMATION_n=2000.Rdat" )
 load( "dat/03_SYNTHETIC-DATA_n=2000.Rdat" )
