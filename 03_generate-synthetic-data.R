@@ -24,61 +24,29 @@ get_public_time = function ( id ) {
 
 set.seed(5482)
 
-load( "dat/20_random-postcodes.Rdat" )
+load( "dat/01_RANDOM-POSTCODES_n=2000.Rdat" )
 
+### Random placeholder data for the time being.
+### This data will be read in from ArcPro/Traveline output
+### once I have it.
 public_distance = rnorm( number_of_participants,
-                          mean=25,
-                          sd=8 )
-
+                         mean=25,
+                         sd=8 )
 public_time = public_distance + rnorm( number_of_participants,
-                                      mean=30,
-                                      sd=5 )
+                                       mean=30,
+                                       sd=5 )
 
-### Needing to add the attendance data now
-
-# trial_data.definition = 
-#   ### Defining the arm
-#   defData( varname = "ARM_categorical",
-#            dist = "categorical",
-#            formula = catProbs(0.50,0.50),
-#            id = "idnum")
-
-### Defining the site
-# defData( varname = "Site",
-#          dist = "nonrandom",
-#          formula = "RAH")
-
-### Defining the attendance
-### - this could just be random
-### - or could be dependent on the distance from the site
-### 
-### tdef <- defData(varname = "T", dist = "binary", formula = 0.5)
-### 
-
-### Placeholder for distance
-# defData( varname = "distance",
-#         dist = "gamma",
-#         formula = 10,
-#         variance = 1 ) %>% 
-
-### Test incorporating functions
-# defData( varname = "test",
-#          dist = "nonrandom",
-#          formula = "sqrt(distance)") #%>% 
-# defData( varname = "identification",
-#          dist = "categorical",
-#          formula = catProbs(rep.int( 1/num_patients,times=num_patients) )) %>% 
-# defData( varname = "test2",
-#          dist = "nonrandom",
-#          formula = "get_patient_info(idnum)" )
-
+#####################################################################
+### Initialise the data definition object                         ###
+#####################################################################
 
 trial_data.definition = 
-  ### Defining the arm
+  ### Defining the arm variable
   defData( varname = "arm",
            dist = "categorical",
            formula = catProbs(0.50,0.50),
            id = "idnum")
+
 
 #####################################################################
 ### Adding STATIC attendance data ###################################
@@ -95,6 +63,13 @@ trial_data.synthetic.STATIC = genData( number_of_participants,
 #####################################################################
 ### Generate attendance data based on distance ######################
 #####################################################################
+
+### NB. Any data that we want to include in a dropdown box in the
+###     resulting Shiny app should be prefixed with "METRIC_".  Also,
+###     make sure that these are readable, as text in the dropdown
+###     bow will be derived from the column names.  For example:
+###     METRIC_public_distance will be shown as Public distance in 
+###     the drop down box.
 
 ### Generating distance information
 public_distance_definition = defDataAdd( varname = "METRIC_public_distance",
@@ -122,12 +97,6 @@ trial_data.synthetic.LOADED = addColumns(public_time_definition,
                                          trial_data.synthetic.LOADED)
 ### Rescaling
 
-# r_min = 5
-# r_max = 50
-# t_min = -10
-# t_max = 10
-# m = trial_data.synthetic.LOADED$distance
-
 rescale = function(x,
                    r_min = 5,
                    r_max = 50,
@@ -149,6 +118,8 @@ trial_data.synthetic.LOADED = trial_data.synthetic.LOADED %>%
   mutate( parameter_rescaled = rescale(parameter,
                                        r_min=-1,r_max=1,t_min=0,t_max=1) ) 
 
+### Some plots just to reassure me that the right things are
+### happening.
 
 ggplot( data=trial_data.synthetic.LOADED,
         aes(x=public_distance,
@@ -220,19 +191,8 @@ ggplot( data=trial_data.synthetic.LOADED,
         aes( x = attendance_T2_STATIC.f,
              y = public_distance )) + geom_boxplot()
 
-### Questions for Thanos
-### --------------------
-### (1) How do I include a second variable when drawing from the
-###     binary distribution (variable could be TRUE/FALSE) or
-###     ordinal (SIMD level).
-### (2) Informing the relationship between distance from trial
-###     centre and the participant - how to choose the relationship?
-###     (NB. I will look in the literature).
-### (3) Including postcode boundaries in leaflet - would like to try
-###     different presentations (e.g. hex)
-
 save( trial_data.synthetic.LOADED,
       trial_data.synthetic.STATIC,
-      file=sprintf( "dat/%d_synthetic-data.Rdat",
+      file=sprintf( "dat/03_SYNTHETIC-DATA_n=%d.Rdat",
                     number_of_participants ) )
 
