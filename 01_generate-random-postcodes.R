@@ -24,22 +24,6 @@ list_of_outcodes = c( sprintf( "PA%d", c( 1:19 ) ),
 hospital_postcode = "PA29PN"
 hospital_postcode_information = postcode_lookup( hospital_postcode )
 
-# postcode_holder = tibble()
-# 
-# postcode_columns = c(
-#   "outcode"          , "postcode"  ,
-#   "longitude"        , "latitude"  ,
-#   "zone_intermediate", "zone_lower",
-#   "admin_authority"   
-# )
-# 
-# postcode_holder = postcode_columns %>%
-#   purrr::map_dfc(setNames, object = list(character())) %>% 
-#   mutate( id = integer()) %>%
-#   mutate( longitude = double() ) %>% 
-#   mutate( latitude = double() ) %>% 
-#   select( id, everything() )
-
 postcode_holder = tibble(
   idnum = NA,
   outcode  = hospital_postcode_information$outcode,
@@ -76,6 +60,7 @@ for ( i in 1:number_of_participants ) {
 }
 
 postcode_holder = postcode_holder %>%
+  filter( !is.na( idnum ) ) %>% 
   arrange( idnum ) %>% 
   mutate( group = ifelse( is.na(idnum), "Hospital", "Participant") )
 
@@ -95,5 +80,49 @@ postcode_holder %>%
   filter( group == "Hospital" ) %>% 
   write_csv( "dat/01_RANDOM-POSTCODES_hospital.csv" )
 
+### Writing output file for Traveline Scotland.
+traveline_output = tibble(
+  PostcodeOrigin = postcode_holder$postcode %>% str_replace( " ", "" ) ,
+  PostcodeDestination = hospital_postcode,
+  OriginName = sprintf( "Home|%d|%s",
+                        1:number_of_participants,
+                        postcode_holder$postcode ),
+  DestinationName = "RAH",
+  ArriveTime = "13:00",
+  ArriveDays = "Tu",
+  DepartTime = "",
+  DepartDays = "",
+  JourneyDuration = "",
+  JourneyChanges = "",
+  EmailAddress = "",
+  TransportModes = ""
+)
+
+batch_size = 800
+num_batches = ceiling( number_of_participants/batch_size )
+batch_start = seq(1,number_of_participants,by=batch_size)
+
+for ( i in 1:num_batches ) {
+  this_start = batch_start[i] 
+  this_end   = min(c(this_start + batch_size - 1,
+                     number_of_participants))
+  this_batch = traveline_output[this_start:this_end,]
+  
+  this_batch_filename = sprintf( "dat/01_TRAVELINE-UPLOAD_BATCH%d_%d-%d.csv",
+                                 i,
+                                 this_start,
+                                 this_end )
+  
+  cat( sprintf( "Writing out Traveline batch #%d [%4d-%4d, %3d records]\n",
+                i,
+                this_start,
+                this_end,
+                nrow( this_batch )) )
+  
+  this_batch %>% 
+    write.table( this_batch_filename,
+                 row.names=FALSE )
+
+}
 
 
