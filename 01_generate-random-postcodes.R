@@ -11,10 +11,14 @@ library( PostcodesioR )
 
 set.seed( "5482" )
 
-number_of_participants = 20
+number_of_participants = 2000
 
-list_of_outcodes = c( sprintf( "PA%d", c( 1:6, 10:11 ) ),
-                      sprintf( "G%d" , c( 52, 53, 60, 77, 78, 81, 82) )
+list_of_outcodes = c( sprintf( "PA%d", c( 1:19 ) ),
+                      sprintf( "G%d" , c( 41:46,
+                                          51:53,
+                                          60,
+                                          73:78,
+                                          81, 82, 84) )
 )
 
 hospital_postcode = "PA29PN"
@@ -80,16 +84,16 @@ save( postcode_holder,
       hospital_postcode,
       hospital_postcode_information,
       number_of_participants,
-      file=sprintf( "dat/%d_random-postcodes.Rdat",
+      file=sprintf( "dat/01_RANDOM-POSTCODES_n=%d.Rdat",
                     number_of_participants ) )
 
 postcode_holder %>% 
   filter( group == "Participant" ) %>% 
-  write_csv( "dat/participants.csv" )
+  write_csv( "dat/01_RANDOM-POSTCODES_participants.csv" )
 
 postcode_holder %>% 
   filter( group == "Hospital" ) %>% 
-  write_csv( "dat/hospital.csv" )
+  write_csv( "dat/01_RANDOM-POSTCODES_hospital.csv" )
 
 
 
