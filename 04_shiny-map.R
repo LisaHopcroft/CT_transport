@@ -15,9 +15,9 @@ library( stringr  )
 library( leaflet  )
 library( purrr    )
 
-load( "../CT_transport/dat/20_random-postcodes.Rdat")
-load( "../CT_transport/dat/20_synthetic-data.Rdat" )
-load( "../CT_transport/dat/20_postcode_map.Rdat" )
+load( "dat/01_RANDOM-POSTCODES_n=2000.Rdat")
+load( "dat/02_MAPPING-INFORMATION_n=2000.Rdat" )
+load( "dat/03_SYNTHETIC-DATA_n=2000.Rdat" )
 
 trial_data = postcode_holder %>% 
     inner_join( trial_data.synthetic.LOADED )
@@ -28,6 +28,18 @@ names(metric_list) = metric_list %>%
     str_replace( "METRIC_", "" ) %>% 
     str_replace( "_", " " ) %>% 
     str_to_sentence( )
+
+### Initialising slider - use the first metric as default
+this_metric = metric_list[1]
+
+### Define some nice breakpoints
+these_breaks = trial_data %>% 
+    pull( sym(this_metric) ) %>% 
+    base::pretty()
+
+this_step = these_breaks[2]-these_breaks[1]
+this_min  = min(these_breaks)
+this_max  = max(these_breaks)
 
 ui = fluidPage(
     title="A Shiny New Layout",
@@ -41,9 +53,9 @@ ui = fluidPage(
                plotOutput(outputId = "metric_histogram"),
                sliderInput(inputId = "metric_threshold",
                            label = "Threshold:",
-                           min = min(trial_data[,metric_list[1]]),
-                           max = max(trial_data[,metric_list[1]]),
-                           value = max(trial_data[,metric_list[1]])))
+                           min = this_min,
+                           max = this_max,
+                           value = this_max ) )
     )
 )
 
