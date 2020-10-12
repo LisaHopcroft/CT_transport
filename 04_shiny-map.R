@@ -19,7 +19,6 @@ load( "../CT_transport/dat/20_random-postcodes.Rdat")
 load( "../CT_transport/dat/20_synthetic-data.Rdat" )
 load( "../CT_transport/dat/20_postcode_map.Rdat" )
 
-
 trial_data = postcode_holder %>% 
     inner_join( trial_data.synthetic.LOADED )
 
@@ -29,63 +28,6 @@ names(metric_list) = metric_list %>%
     str_replace( "METRIC_", "" ) %>% 
     str_replace( "_", " " ) %>% 
     str_to_sentence( )
-
-centre_longitude  = trial_data %>% pull( longitude ) %>% mean
-centre_latitude   = trial_data %>% pull( latitude  ) %>% mean
-
-marker_palette = colorFactor( c("navy","red"),
-                              domain = c("Hospital","Participant"))
-
-
-# leaflet(postcode_holder) %>%
-#     setView( lng=centre_longitude,
-#              lat=centre_latitude,
-#              zoom = 10 ) %>%
-#     #addTiles() %>% 
-#     addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
-#     # addMarkers(~longitude,
-#     #            ~latitude,
-#     #            popup = ~as.character(id),
-#     #            label = ~as.character(postcode))
-#     addCircleMarkers(
-#         ~longitude,
-#         ~latitude,
-#         radius = ~ifelse(group == "Hospital",20, 5),
-#         color  = ~marker_palette(group),
-#         stroke = TRUE,
-#         fillOpacity = 0.5
-#     )
-
-# Define UI for app that draws a histogram ----
-# ui <- fluidPage(
-#     
-#     # App title ----
-#     titlePanel("Hello Shiny map!"),
-#     
-#     # Sidebar layout with input and output definitions ----
-#     sidebarLayout(
-#         
-#         # Sidebar panel for inputs ----
-#         sidebarPanel(
-#             
-#             # Input: Slider for the number of bins ----
-#             sliderInput(inputId = "zoom_coef",
-#                         label = "Zoom:",
-#                         min = 1,
-#                         max = 20,
-#                         value = 10)
-#             
-#         ),
-#         
-#         # Main panel for displaying outputs ----
-#         mainPanel(
-#             
-#             # Output: Histogram ----
-#             leafletOutput(outputId = "mapPlot")
-#             
-#         )
-#     )
-# )
 
 ui = fluidPage(
     title="A Shiny New Layout",
@@ -105,40 +47,10 @@ ui = fluidPage(
     )
 )
 
-# ui <- fluidPage(
-#     
-#     title = "A Shiny New Layout",
-#     
-#     leafletOutput(outputId = "mapPlot"),
-#     
-#     hr(),
-#     
-#     fluidRow(
-#         column(3,
-#                h4("Diamonds Explorer"),
-#                sliderInput(inputId = "zoom_coef",
-#                            label = "Zoom:",
-#                            min = 1,
-#                            max = 20,
-#                            value = 10),
-#                br(),
-#                checkboxInput('jitter', 'Jitter'),
-#                checkboxInput('smooth', 'Smooth')
-#         )#,
-#         # column(4, offset = 1,
-#         #        selectInput('x', 'X', names(dataset)),
-#         #        selectInput('y', 'Y', names(dataset), names(dataset)[[2]]),
-#         #        selectInput('color', 'Color', c('None', names(dataset)))
-#         # ),
-#         # column(4,
-#         #        selectInput('facet_row', 'Facet Row', c(None='.', names(dataset))),
-#         #        selectInput('facet_col', 'Facet Column', c(None='.', names(dataset)))
-#         # )
-#     )
-# )
+### ============================================================= ###
+### SERVER LOGIC                                                  ###
+### ============================================================= ###
 
-
-# Define server logic required to draw a histogram ----
 server <- function(input, output, session) {
     
     ### Edit the parameters of the threshold slider
@@ -146,11 +58,22 @@ server <- function(input, output, session) {
     ### box.
     observe({
         this_metric = input$metric
+        
+        ### Define some nice breakpoints
+        these_breaks = trial_data %>% 
+            pull( sym(this_metric) ) %>% 
+            base::pretty()
+        
+        this_step = these_breaks[2]-these_breaks[1]
+        this_min  = min(these_breaks)
+        this_max  = max(these_breaks)
+        
         updateSliderInput( session,
                            "metric_threshold",
-                           min=min(trial_data[,this_metric]),
-                           max=max(trial_data[,this_metric]),
-                           val=max(trial_data[,this_metric]) )
+                           min=this_min,
+                           max=this_max,
+                           step=this_step,
+                           val=this_max )
     })
     
     output$mapPlot <- renderLeaflet({
@@ -158,27 +81,59 @@ server <- function(input, output, session) {
                                  input$metric,
                                  input$metric_threshold ) 
         
-        this_leaflet_data = trial_data %>% 
+        this_leaflet_data = trial_data %>%
             filter( rlang::eval_tidy( rlang::parse_expr(filter_string) ) )
+         
+        # leaflet(this_leaflet_data ) %>%
+        #         setView( lng=centre_longitude,
+        #                  lat=centre_latitude,
+        #                  zoom = 9 ) %>% 
+        #     addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
+        #     # addMarkers(~longitude,
+        #     #            ~latitude,
+        #     #            popup = ~as.character(id),
+        #     #            label = ~as.character(postcode))
+        #     addCircleMarkers(
+        #         ~longitude,
+        #         ~latitude,
+        #         radius = ~ifelse(group == "Hospital",20, 5),
+        #         color  = ~marker_palette(group),
+        #         stroke = TRUE,
+        #         fillOpacity = 0.5
+        #     )
         
-        leaflet(this_leaflet_data ) %>%
-                setView( lng=centre_longitude,
-                         lat=centre_latitude,
-                         zoom = 9 ) %>% 
-            addProviderTiles(providers$Esri.NatGeoWorldMap) %>% 
-            # addMarkers(~longitude,
-            #            ~latitude,
-            #            popup = ~as.character(id),
-            #            label = ~as.character(postcode))
-            addCircleMarkers(
-                ~longitude,
-                ~latitude,
-                radius = ~ifelse(group == "Hospital",20, 5),
-                color  = ~marker_palette(group),
-                stroke = TRUE,
-                fillOpacity = 0.5
-            )
+        this_patient_data = subset( postcode.objects.PATIENTS,
+                                    postcode.objects.PATIENTS$Postcode %in% this_leaflet_data$postcode )
         
+        leaflet( postcode.objects ) %>% 
+            addProviderTiles( providers$Stamen.TonerLite ) %>%
+            setView( lng=centre_longitude,
+                     lat=centre_latitude,
+                     zoom = 10 ) %>%
+            ### Add the polygons for the postcode areas, data for this are
+            ### provided in postcode.objects)
+            addPolygons( weight = 0.5, fillOpacity = 0.33, popup = ~ ( Postcode ), 
+                         smoothFactor = 0.5, color = "black",
+                         highlightOptions = highlightOptions( color = "black", weight = 5, bringToFront = TRUE ) ) %>%
+            ### Add the polygomes for those postcode objects to which 
+            ### our patient population has been mapped
+            addPolygons( data = this_patient_data,
+                         weight = 15, 
+                         fillOpacity = 0.5,
+                         color = "yellow",
+                         popup = ~ paste( "Postcode sector: ", Postcode, sep = "" ),
+                         popupOptions = popupOptions( keepInView = TRUE ),
+                         smoothFactor = 0.5,
+                         # color = ~ num_pal( SIMD16_Decile ),
+                         highlightOptions = highlightOptions( color = "red",
+                                                              weight = 15,
+                                                              bringToFront = TRUE ) ) %>%
+            ### Add the hospital
+            addAwesomeMarkers( data=postcode_holder %>% filter( group=="Hospital"),
+                               icon = icon.fa, 
+                               ~longitude, 
+                               ~latitude, 
+                               popup = "RAH" )
     })
     
     output$metric_histogram <- renderPlot({
