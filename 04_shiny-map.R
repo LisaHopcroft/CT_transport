@@ -25,6 +25,7 @@ trial_data = postcode_holder %>%
 
 metric_list = trial_data %>% colnames %>%
     keep( ~str_detect(.x, "^METRIC_") )
+
 names(metric_list) = metric_list %>%
     str_replace( "METRIC_", "" ) %>% 
     str_replace( "_", " " ) %>% 
@@ -56,7 +57,8 @@ ui = fluidPage(
                            label = "Threshold:",
                            min = this_min,
                            max = this_max,
-                           value = this_max ) )
+                           value = this_max ),
+               textOutput(outputId = "patient_selection_message") )
     )
 )
 
@@ -96,7 +98,7 @@ server <- function(input, output, session) {
         
         this_leaflet_data = trial_data %>%
             filter( rlang::eval_tidy( rlang::parse_expr(filter_string) ) )
-         
+        
         # leaflet(this_leaflet_data ) %>%
         #         setView( lng=centre_longitude,
         #                  lat=centre_latitude,
@@ -118,35 +120,49 @@ server <- function(input, output, session) {
         this_patient_data = subset( postcode.objects.PATIENTS,
                                     postcode.objects.PATIENTS$Postcode %in% this_leaflet_data$postcode )
         
-        leaflet( postcode.objects ) %>% 
-            addProviderTiles( providers$Stamen.TonerLite ) %>%
-            setView( lng=centre_longitude,
-                     lat=centre_latitude,
-                     zoom = 10 ) %>%
-            ### Add the polygons for the postcode areas, data for this are
-            ### provided in postcode.objects)
-            addPolygons( weight = 0.5, fillOpacity = 0.33, popup = ~ ( Postcode ), 
-                         smoothFactor = 0.5, color = "black",
-                         highlightOptions = highlightOptions( color = "black", weight = 5, bringToFront = TRUE ) ) %>%
-            ### Add the polygomes for those postcode objects to which 
-            ### our patient population has been mapped
-            addPolygons( data = this_patient_data,
-                         weight = 15, 
-                         fillOpacity = 0.5,
-                         color = "yellow",
-                         popup = ~ paste( "Postcode sector: ", Postcode, sep = "" ),
-                         popupOptions = popupOptions( keepInView = TRUE ),
-                         smoothFactor = 0.5,
-                         # color = ~ num_pal( SIMD16_Decile ),
-                         highlightOptions = highlightOptions( color = "red",
-                                                              weight = 15,
-                                                              bringToFront = TRUE ) ) %>%
-            ### Add the hospital
-            addAwesomeMarkers( data=postcode_holder %>% filter( group=="Hospital"),
-                               icon = icon.fa, 
-                               ~longitude, 
-                               ~latitude, 
-                               popup = "RAH" )
+        # draw_patient_map( data           = postcode.objects,
+        #                   data_patients  = this_patient_data,
+        #                   data_postcodes = postcode_holder,
+        #                   focus_label    = "RAH",
+        #                   centre_long    = centre_longitude,
+        #                   centre_lat     = centre_latitude )
+        
+        add_annotations_to_basic_map( basic_map = BASIC_MAP,
+                                      data_patients  = this_patient_data,
+                                      data_postcodes = postcode_holder,
+                                      focus_label    = "RAH",
+                                      centre_long    = centre_longitude,
+                                      centre_lat     = centre_latitude )
+        
+        # leaflet( postcode.objects ) %>% 
+        #     addProviderTiles( providers$Stamen.TonerLite ) %>%
+        #     setView( lng=centre_longitude,
+        #              lat=centre_latitude,
+        #              zoom = 10 ) %>%
+        #     ### Add the polygons for the postcode areas, data for this are
+        #     ### provided in postcode.objects)
+        #     addPolygons( weight = 0.5, fillOpacity = 0.33, popup = ~ ( Postcode ), 
+        #                  smoothFactor = 0.5, color = "black",
+        #                  highlightOptions = highlightOptions( color = "black", weight = 5, bringToFront = TRUE ) ) %>%
+        #     ### Add the polygomes for those postcode objects to which 
+        #     ### our patient population has been mapped
+        #     addPolygons( data = this_patient_data,
+        #                  weight = 15, 
+        #                  fillOpacity = 0.5,
+        #                  color = "yellow",
+        #                  popup = ~ paste( "Postcode sector: ", Postcode, sep = "" ),
+        #                  popupOptions = popupOptions( keepInView = TRUE ),
+        #                  smoothFactor = 0.5,
+        #                  # color = ~ num_pal( SIMD16_Decile ),
+        #                  highlightOptions = highlightOptions( color = "red",
+        #                                                       weight = 15,
+        #                                                       bringToFront = TRUE ) ) %>%
+        #     ### Add the hospital
+        #     addAwesomeMarkers( data=postcode_holder %>% filter( group=="Hospital"),
+        #                        icon = icon.fa, 
+        #                        ~longitude, 
+        #                        ~latitude, 
+        #                        popup = "RAH" )
     })
     
     output$metric_histogram <- renderPlot({
@@ -154,6 +170,16 @@ server <- function(input, output, session) {
                 aes_string(input$metric)) +
             geom_histogram( )
         
+    })
+    
+    output$patient_selection_message <- renderText({
+        filter_string = sprintf( "%s < %f",
+                                 input$metric,
+                                 input$metric_threshold ) 
+        tmp = trial_data %>%
+            filter( rlang::eval_tidy( rlang::parse_expr(filter_string) ) )
+        
+        sprintf( "This filter chooses %d patients\n", nrow(tmp) )
     })
     
 }
