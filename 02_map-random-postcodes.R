@@ -100,3 +100,21 @@ save( postcode.objects,
                     number_of_participants ) )
 
 
+### A function now exists to plot the map easily.
+### This is defined in the 00_preparation .R script.
+
+draw_patient_map( data           = postcode.objects,
+                  data_patients  = postcode.objects.PATIENTS,
+                  data_postcodes = postcode_holder,
+                  focus_label    = "RAH",
+                  centre_long    = centre_longitude,
+                  centre_lat     = centre_latitude )
+
+draw_patient_map( data           = postcode.objects,
+                  data_patients  = postcode.objects.PATIENTS,
+                  data_postcodes = postcode_holder,
+                  focus_label    = "RAH",
+                  centre_long    = centre_longitude,
+                  centre_lat     = centre_latitude,
+                  summarise      = FALSE )
+
