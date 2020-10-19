@@ -88,7 +88,7 @@ traveline_output = tibble(
                         1:number_of_participants,
                         postcode_holder$postcode ),
   DestinationName = "RAH",
-  ArriveTime = "13:00",
+  ArriveTime = "15:00",
   ArriveDays = "Tu",
   DepartTime = "",
   DepartDays = "",
@@ -98,22 +98,36 @@ traveline_output = tibble(
   TransportModes = ""
 )
 
-batch_size = 800
+### Note that Traveline aren't good at handling situations
+### where a journey isn't found.  When first submitting
+### these jobs, I would get errors for a few lines and the
+### whole job would fail (I think that there must be a 
+### maximum tolerated number of errors, because the whole
+### job does not always fail).
+### 
+### I am going to handle this manually in the meantime,
+### as I know where the errors are occuring.
+
+lines_to_remove = c( 52, 81, 169 )
+traveline_output.clean = traveline_output[-1*lines_to_remove,]
+traveline_output.n = traveline_output.clean %>% nrow
+  
+batch_size = 900
 num_batches = ceiling( number_of_participants/batch_size )
 batch_start = seq(1,number_of_participants,by=batch_size)
 
 for ( i in 1:num_batches ) {
   this_start = batch_start[i] 
   this_end   = min(c(this_start + batch_size - 1,
-                     number_of_participants))
-  this_batch = traveline_output[this_start:this_end,]
+                     traveline_output.n))
+  this_batch = traveline_output.clean[this_start:this_end,]
   
-  this_batch_filename = sprintf( "dat/01_TRAVELINE-UPLOAD_BATCH%d_%d-%d.csv",
+  this_batch_filename = sprintf( "dat/01_TRAVELINE-UPLOAD_CLEAN-BATCH%d_%d-%d.csv",
                                  i,
                                  this_start,
                                  this_end )
   
-  cat( sprintf( "Writing out Traveline batch #%d [%4d-%4d, %3d records]\n",
+  cat( sprintf( "Writing out Traveline (clean) batch #%d [%4d-%4d, %3d records]\n",
                 i,
                 this_start,
                 this_end,
@@ -121,7 +135,10 @@ for ( i in 1:num_batches ) {
   
   this_batch %>% 
     write.table( this_batch_filename,
-                 row.names=FALSE )
+                 row.names = FALSE,
+                 quote = FALSE,
+                 sep=",",
+                 eol = "\r\n" )
 
 }
 
