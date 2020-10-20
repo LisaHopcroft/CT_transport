@@ -75,7 +75,7 @@ trial_data.synthetic.STATIC = genData( number_of_participants,
 ### Generating distance information
 public_distance_definition = defDataAdd( varname = "METRIC_public_distance",
                                          dist    = "nonrandom",
-                                         formula = "get_patient_distance(idnum)" )
+                                         formula = "get_public_distance(idnum)" )
 
 ### Generating distance information
 public_time_definition = defDataAdd( varname = "METRIC_public_time",
