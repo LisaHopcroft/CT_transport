@@ -118,10 +118,12 @@ draw_patient_map( data           = postcode.objects,
                   centre_lat     = centre_latitude,
                   summarise      = FALSE )
 
+
 add_annotations_to_basic_map( basic_map = BASIC_MAP,
                               data_patients  = postcode.objects.PATIENTS,
                               data_postcodes = postcode_holder,
                               focus_label    = "RAH",
                               centre_long    = centre_longitude,
                               centre_lat     = centre_latitude )
+
 
