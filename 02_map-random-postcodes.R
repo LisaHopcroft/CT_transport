@@ -8,7 +8,7 @@ library( purrr )
 library( sp )
 
 load( "dat/00_PREPARATION.Rdat" )
-load( "dat/01_RANDOM-POSTCODES_n=2000.Rdat")
+load( "dat/01a_RANDOM-POSTCODES_NEW_n=2000.Rdat" )
 
 postcode_holder = postcode_holder %>% 
   mutate( Postcode = postcode )

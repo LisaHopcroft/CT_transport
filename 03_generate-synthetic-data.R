@@ -25,7 +25,7 @@ get_public_time = function ( id ) {
 set.seed(5482)
 
 load( "dat/00_PREPARATION.Rdat" )
-load( "dat/01_RANDOM-POSTCODES_n=2000.Rdat" )
+load( "dat/01a_RANDOM-POSTCODES_NEW_n=2000.Rdat" )
 
 ### Random placeholder data for the time being.
 ### This data will be read in from ArcPro/Traveline output
