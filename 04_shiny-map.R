@@ -89,7 +89,12 @@ server <- function(input, output, session) {
                            max=this_max,
                            step=this_step,
                            val=this_max )
+        
+       
     })
+    
+    observe({ ### Add filtered data
+        })
     
     output$mapPlot <- renderLeaflet({
         filter_string = sprintf( "%s < %f",
