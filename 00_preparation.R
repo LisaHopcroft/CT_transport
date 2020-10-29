@@ -51,7 +51,6 @@ draw_patient_map = function( data,
                    smoothFactor = 0.5,
                    color = "black",
                    highlightOptions = highlightOptions( color = "black",
-<<<<<<< HEAD
                                                         weight = 2,
                                                         bringToFront = TRUE ) ) %>%
       ### Add the polygomes for those postcode objects to which 
@@ -118,26 +117,18 @@ add_annotations_to_basic_map = function( basic_map,
       ### Add the polygomes for those postcode objects to which 
       ### our patient population has been mapped
       addPolygons( data = data_patients,
-                   weight = 2, 
-=======
-                                                        weight = 5,
-                                                        bringToFront = TRUE ) ) %>%
+                   weight = 2 ) %>%
       ### Add the polygomes for those postcode objects to which 
       ### our patient population has been mapped
       addPolygons( data = data_patients,
                    weight = 15, 
->>>>>>> eed42f06cc1c7eb8c0b54f507a670dbede1dab60
                    fillOpacity = 0.5,
                    popup = ~ paste( "Postcode sector: ", Postcode, sep = "" ),
                    popupOptions = popupOptions( keepInView = TRUE ),
                    smoothFactor = 0.5,
                    # color = ~ num_pal( SIMD16_Decile ),
                    highlightOptions = highlightOptions( color = "red",
-<<<<<<< HEAD
                                                         weight = 5,
-=======
-                                                        weight = 15,
->>>>>>> eed42f06cc1c7eb8c0b54f507a670dbede1dab60
                                                         bringToFront = TRUE ) ) %>%
       ### Add the hospital
       addAwesomeMarkers( data=data_postcodes %>% filter( group=="Hospital"),
