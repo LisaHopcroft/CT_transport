@@ -40,8 +40,6 @@ BASE_QUERY_STRING = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.or
    </soapenv:Body>
 </soapenv:Envelope>"
 
-
-
 generate_SOAP_query = function( request_id,
                                 #origin_name,
                                 origin_easting,
@@ -67,34 +65,7 @@ generate_SOAP_query = function( request_id,
 
 API_URL = "https://api-2445581400627.apicast.io:443/travelsuite-webservice/services/v4/?WSDL"
 API_KEY = "a1fe53720f5c5261d2043dbab2775c45"
-# 
-# ### https://api-2445581400627.apicast.io:443/travelsuite-webservice/services/v4/?WSDL
-# headerFields = c('user_key' = API_KEY )
-# 
-# 
-# origin_postcode = "PA12 4AW"
-# origin_postcode.info = postcode_lookup( origin_postcode )
-# origin_postcode.eastings = origin_postcode.info$eastings %>% as.character()
-# origin_postcode.northings = origin_postcode.info$northings %>% as.character()
-# 
-# destination_postcode = "KA13 7HR"
-# destination_postcode.info = postcode_lookup( destination_postcode )
-# destination_postcode.eastings = destination_postcode.info$eastings %>% as.character()
-# destination_postcode.northings = destination_postcode.info$northings %>% as.character()
-# 
-# curlPerform(url = API_URL,
-#             httpheader = headerFields,
-#             postfields = generate_SOAP_query.4(
-#               request_id = sprintf( "%s -> %s",
-#                                     origin_postcode,
-#                                     destination_postcode),
-#               origin_easting = origin_postcode.eastings,
-#               origin_northing = origin_postcode.northings,
-#               destination_easting = destination_postcode.eastings ,
-#               destination_northing = destination_postcode.northings,
-#               arrival_time = "2020-11-03T13:00:00"
-#             )
-# )
+
 
 # load("dat/00_PREPARATION.Rdat")
 load("dat/01a_RANDOM-POSTCODES_NEW_n=2000.Rdat")
@@ -104,6 +75,7 @@ destination_postcode = hospital_postcode
 destination_postcode.info = postcode_lookup( destination_postcode )
 destination_postcode.eastings = destination_postcode.info$eastings %>% as.character()
 destination_postcode.northings = destination_postcode.info$northings %>% as.character()
+
 
 XML_tracker = postcode_holder %>%
   filter( group == "Participant") %>%
