@@ -86,7 +86,7 @@ for ( i in 1:nrow( postcode_holder %>% filter( group == "Participant" ) ) ) {
   
   origin_postcode = (postcode_holder %>% pull(postcode)) [i]
   
-  journey.file = sprintf( "dat/BJP_XML/BJP_%04i_%s_%s.xml",
+  journey.file = sprintf( "dat/BJP_TEST/BJP_%04i_%s_%s.xml",
                           i,
                           origin_postcode %>% str_replace(" ", ""),
                           destination_postcode %>% str_replace(" ", "") )
