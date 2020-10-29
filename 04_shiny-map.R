@@ -94,7 +94,7 @@ server <- function(input, output, session) {
     })
     
     observe({ ### Add filtered data
-        })
+        }) ### or eventReactive function
     
     output$mapPlot <- renderLeaflet({
         filter_string = sprintf( "%s < %f",
@@ -138,21 +138,25 @@ server <- function(input, output, session) {
                                       focus_label    = "RAH",
                                       centre_long    = centre_longitude,
                                       centre_lat     = centre_latitude )
-        
-        # leaflet( postcode.objects ) %>% 
+
+        # icon.fa = makeAwesomeIcon( icon = 'flag',
+        #                            markerColor = 'red',
+        #                            iconColor = 'black' )
+        # 
+        # leaflet( postcode.objects ) %>%
         #     addProviderTiles( providers$Stamen.TonerLite ) %>%
         #     setView( lng=centre_longitude,
         #              lat=centre_latitude,
         #              zoom = 10 ) %>%
         #     ### Add the polygons for the postcode areas, data for this are
         #     ### provided in postcode.objects)
-        #     addPolygons( weight = 0.5, fillOpacity = 0.33, popup = ~ ( Postcode ), 
+        #     addPolygons( weight = 0.5, fillOpacity = 0.33, popup = ~ ( Postcode ),
         #                  smoothFactor = 0.5, color = "black",
         #                  highlightOptions = highlightOptions( color = "black", weight = 5, bringToFront = TRUE ) ) %>%
-        #     ### Add the polygomes for those postcode objects to which 
+        #     ### Add the polygomes for those postcode objects to which
         #     ### our patient population has been mapped
         #     addPolygons( data = this_patient_data,
-        #                  weight = 15, 
+        #                  weight = 15,
         #                  fillOpacity = 0.5,
         #                  color = "yellow",
         #                  popup = ~ paste( "Postcode sector: ", Postcode, sep = "" ),
@@ -164,9 +168,9 @@ server <- function(input, output, session) {
         #                                                       bringToFront = TRUE ) ) %>%
         #     ### Add the hospital
         #     addAwesomeMarkers( data=postcode_holder %>% filter( group=="Hospital"),
-        #                        icon = icon.fa, 
-        #                        ~longitude, 
-        #                        ~latitude, 
+        #                        icon = icon.fa,
+        #                        ~longitude,
+        #                        ~latitude,
         #                        popup = "RAH" )
     })
     
