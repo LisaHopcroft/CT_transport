@@ -2,6 +2,9 @@ library( magrittr )
 library( stringr )
 library( dplyr )
 
+load("dat/01a_RANDOM-POSTCODES_NEW_n=2000.Rdat")
+
+
 BASE_QUERY_STRING = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:v4=\"http://Livetravelsuite.trapezegroup.co.uk/v4-4\" xmlns:sch=\"http://xml.trapezegroup.co.uk/schemas\">
    <soapenv:Header/>
    <soapenv:Body>
@@ -67,8 +70,6 @@ API_URL = "https://api-2445581400627.apicast.io:443/travelsuite-webservice/servi
 API_KEY = "a1fe53720f5c5261d2043dbab2775c45"
 
 
-# load("dat/00_PREPARATION.Rdat")
-load("dat/01a_RANDOM-POSTCODES_NEW_n=2000.Rdat")
 
 ### HOSPITAL
 destination_postcode = hospital_postcode
@@ -86,7 +87,7 @@ for ( i in 1:nrow( postcode_holder %>% filter( group == "Participant" ) ) ) {
   
   origin_postcode = (postcode_holder %>% pull(postcode)) [i]
   
-  journey.file = sprintf( "dat/BJP_TEST/BJP_%04i_%s_%s.xml",
+  journey.file = sprintf( "dat/BJP_XML/BJP_%04i_%s_%s.xml",
                           i,
                           origin_postcode %>% str_replace(" ", ""),
                           destination_postcode %>% str_replace(" ", "") )

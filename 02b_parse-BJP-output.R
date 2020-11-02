@@ -164,8 +164,9 @@ ggplot( PUBLIC_journey_times.fastest,
         aes( x=1, y=minimum_journey_time ) ) +
   geom_violin() + geom_jitter( width=0.1 )
 
-save( PUBLIC_journey_times.all,
+save( track_progress,
+      PUBLIC_journey_times.all,
       PUBLIC_journey_times.fastest,
-      file=sprintf( "dat/01e_PUBLIC-journey-times_n=%d.Rdat",
+      file=sprintf( "dat/02b_PUBLIC-journey-times_n=%d.Rdat",
                     number_of_participants ) )
 

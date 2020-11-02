@@ -3,6 +3,7 @@ library( magrittr )
 library( ggplot2 )
 library( stringr )
 library( tidyr )
+library( data.table )
 
 ### Tried to install via CRAN but encountered problems
 ### that weren't immediately clear
@@ -86,21 +87,20 @@ for ( i in 1:num_batches ) {
   
 }
 
-PRIVATE_journey_times.fastest = duration_time_to_hospital
 
 ### Visual check that this is doing what it should do.
 
-check.data = postcode_holder %>%
-  mutate( PRIVATE_journey = PRIVATE_journey_times.fastest )
+PRIVATE_journey_times.fastest.OSRM = postcode_holder %>%
+  mutate( PRIVATE_journey = duration_time_to_hospital )
   
-check.sf = st_as_sf(as.data.table(check.data),
+check.sf = st_as_sf(as.data.table(PRIVATE_journey_times.fastest.OSRM),
                     coords = c("longitude", "latitude"), 
                     crs = 4326, agr = "constant")
 ### Quick plot of data (x,y coordinates) + overlay of various parameters.
 ### Checking whether the journey duration looks sensible.
 plot( check.sf )
 
-save( PRIVATE_journey_times.fastest,
-      file=sprintf( "dat/01c_PRIVATE-journey-times_n=%d.Rdat",
+save( PRIVATE_journey_times.fastest.OSRM,
+      file=sprintf( "dat/03b_PRIVATE-journey-times_n=%d.Rdat",
                     number_of_participants ) )
 
