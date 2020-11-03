@@ -126,4 +126,4 @@ ggplot( PATIENT.DATA.boxplot_data,
 
 
 save( PATIENT.DATA,
-      file="dat/04_COMBILED-DATASET.Rdat" )
+      file="dat/04_COMPILED-DATASET.Rdat" )
