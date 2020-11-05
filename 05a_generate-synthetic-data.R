@@ -179,7 +179,7 @@ variables_for_synthesis =
   keep( ~str_detect(.x, "^RAW\\.") )
 
 map.vars = tibble(
-  id.num = trial_data.synthetic %>% pull( idnum )
+  idnum = trial_data.synthetic %>% pull( idnum )
 )
 
 trial_data.synthetic.MODERATE = trial_data.synthetic
