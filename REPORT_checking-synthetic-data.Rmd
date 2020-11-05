@@ -1,0 +1,22 @@
+---
+title: "Checking synthetic data"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Checking synthetic data
+
+```{r, results='asis'}
+these_figures = dir( "fig",
+                     pattern="05b_CHECK_.*\\.png",
+                     full.names = TRUE )
+
+for( this_fig in these_figures ) {
+  cat( sprintf( "![%s](%s)",
+                basename(this_fig),
+                this_fig) )
+}
+```
