@@ -93,7 +93,8 @@ for( dataset_type in c( "EXTREME",
                  aes( x=!!sym(input_variable),
                       y=!!sym(mapping_variable)) ) +
       geom_point() +
-      geom_line()
+      geom_line() +
+      ylim(0,1)
     
     p2 = ggplot( i.d,
                  aes( x=!!sym(output_variable),

@@ -17,15 +17,15 @@ get_public_time = function ( id ) {
 get_private_time = function ( id ) {
   return( PATIENT.DATA %>% filter( id == id ) %>% pull(private_time.ArcPro) ) 
 }
-
-get_public_time_random = function ( id ) {
-  return( PATIENT.DATA %>% filter( id == id ) %>% pull(public_time.RANDOM) ) 
-}
-
-get_private_time_random = function ( id ) {
-  return( PATIENT.DATA %>% filter( id == id ) %>% pull(private_time.RANDOM) ) 
-}
-
+# 
+# get_public_time_random = function ( id ) {
+#   return( PATIENT.DATA %>% filter( id == id ) %>% pull(public_time.RANDOM) ) 
+# }
+# 
+# get_private_time_random = function ( id ) {
+#   return( PATIENT.DATA %>% filter( id == id ) %>% pull(private_time.RANDOM) ) 
+# }
+# 
 
 rescale = function(x,
                    r_min,
@@ -95,9 +95,8 @@ number_of_participants = PATIENT.DATA %>% nrow
 timepoint.list = sprintf( "T%d", 0:4 ) 
 
 ### ADDING A PERMUTED DATASET
-
-PATIENT.DATA$private_time.RANDOM = PATIENT.DATA %>% pull( private_time.ArcPro ) %>% sample
-PATIENT.DATA$public_time.RANDOM = PATIENT.DATA %>% pull( public_time.BJP ) %>% sample
+# PATIENT.DATA$private_time.RANDOM = PATIENT.DATA %>% pull( private_time.ArcPro ) %>% sample
+# PATIENT.DATA$public_time.RANDOM = PATIENT.DATA %>% pull( public_time.BJP ) %>% sample
 
 # ### Random placeholder data for the time being.
 # ### This data will be read in from ArcPro/Traveline output
@@ -147,14 +146,14 @@ public_time_definition = defDataAdd( varname = "RAW.public_time",
 private_time_definition = defDataAdd( varname = "RAW.private_time",
                                      dist    = "nonrandom",
                                      formula = "get_private_time(idnum)" )
-
-public_time_definition_RANDOM = defDataAdd( varname = "RAW.public_time_random",
-                                            dist    = "nonrandom",
-                                            formula = "get_public_time_random(idnum)" )
-
-private_time_definition_RANDOM = defDataAdd( varname = "RAW.private_time_random",
-                                             dist    = "nonrandom",
-                                             formula = "get_private_time_random(idnum)" )
+# 
+# public_time_definition_RANDOM = defDataAdd( varname = "RAW.public_time_random",
+#                                             dist    = "nonrandom",
+#                                             formula = "get_public_time_random(idnum)" )
+# 
+# private_time_definition_RANDOM = defDataAdd( varname = "RAW.private_time_random",
+#                                              dist    = "nonrandom",
+#                                              formula = "get_private_time_random(idnum)" )
 
 ### Let's say we know that the relationship between
 ### distance (x axis) and the likelihood of attendance
@@ -170,8 +169,8 @@ private_time_definition_RANDOM = defDataAdd( varname = "RAW.private_time_random"
 
 trial_data.synthetic = addColumns(public_time_definition ,trial_data.synthetic)
 trial_data.synthetic = addColumns(private_time_definition,trial_data.synthetic)
-trial_data.synthetic = addColumns(public_time_definition_RANDOM ,trial_data.synthetic)
-trial_data.synthetic = addColumns(private_time_definition_RANDOM,trial_data.synthetic)
+# trial_data.synthetic = addColumns(public_time_definition_RANDOM ,trial_data.synthetic)
+# trial_data.synthetic = addColumns(private_time_definition_RANDOM,trial_data.synthetic)
 
 variables_for_synthesis = 
   trial_data.synthetic %>%
@@ -185,14 +184,36 @@ map.vars = tibble(
 trial_data.synthetic.MODERATE = trial_data.synthetic
 map.vars.MODERATE = map.vars
 
+lower_percentile = 0.20
+upper_percentile = 0.50
+
+private_time.mapping_vars = list(
+  rmin = 15, #(trial_data.synthetic$RAW.private_time %>% stats::quantile(lower_percentile)),
+  rmax = 35, #(trial_data.synthetic$RAW.private_time %>% stats::quantile(upper_percentile)),
+  tmin = 0.25
+)
+
+public_time.mapping_vars = list(
+  rmin = 25, #(trial_data.synthetic$RAW.public_time %>% stats::quantile(lower_percentile) ),
+  rmax = 75, #(trial_data.synthetic$RAW.public_time %>% stats::quantile(upper_percentile) ),
+  tmin = 0.25
+)
+
+
 for ( this.raw_var in variables_for_synthesis ) {
-  attendance.out = generate_attendance_data( this.raw_var,
-                                             trial_data.synthetic.MODERATE,
-                                             map.vars.MODERATE,
-                                             timepoint.list,
-                                             rmin = 15,
-                                             rmax = 90,
-                                             tmin = 0 )
+
+  these.mapping_parameters = sprintf( "%s.mapping_vars", 
+                                      this.raw_var %>%
+                                        str_replace( "^RAW\\.", "" ) %>% 
+                                        str_replace( "_random", "" )) %>% get
+  
+  attendance.out = generate_attendance_data( base_var = this.raw_var,
+                                             trial_vars = trial_data.synthetic.MODERATE,
+                                             map_vars = map.vars.MODERATE,
+                                             timepoints = timepoint.list,
+                                             rmin = these.mapping_parameters$rmin,
+                                             rmax = these.mapping_parameters$rmax,
+                                             tmin = these.mapping_parameters$tmin ) 
   
   trial_data.synthetic.MODERATE = attendance.out$trial_data
   map.vars.MODERATE = attendance.out$mapping_data
@@ -203,20 +224,55 @@ for ( this.raw_var in variables_for_synthesis ) {
 trial_data.synthetic.EXTREME = trial_data.synthetic
 map.vars.EXTREME = map.vars
 
+private_time.mapping_vars$tmin = -0.5
+public_time.mapping_vars$tmin  = -0.5
+
+
 for ( this.raw_var in variables_for_synthesis ) {
+  
+  these.mapping_parameters = sprintf( "%s.mapping_vars", 
+                                      this.raw_var %>%
+                                        str_replace( "^RAW\\.", "" ) %>% 
+                                        str_replace( "_random", "" )) %>% get
+  
   attendance.out = generate_attendance_data( this.raw_var,
                                              trial_data.synthetic.EXTREME,
                                              map.vars.EXTREME,
                                              timepoint.list,
-                                             rmin = 5,
-                                             rmax = 30,
-                                             tmin = -0.5 )
+                                             rmin = these.mapping_parameters$rmin,
+                                             rmax = these.mapping_parameters$rmax,
+                                             tmin = these.mapping_parameters$tmin
+                                               )
   
   trial_data.synthetic.EXTREME = attendance.out$trial_data
   map.vars.EXTREME = attendance.out$mapping_data
   
 }
 
+attendance_columns = trial_data.synthetic.MODERATE %>%
+  select( starts_with("ATT.")) %>%
+            colnames
+
+dataset_lists = c( "EXTREME", "MODERATE" )
+
+for ( this.d_type in dataset_lists ) {
+  this.d_name = sprintf("trial_data.synthetic.%s",
+                        this.d_type) 
+  
+  this.d = get( this.d_name )
+  
+  for ( this.attendance_column in attendance_columns ) {
+    this.randomized_column = paste(this.attendance_column,"RANDOM",sep="_")
+    
+    r = this.d %>%
+      pull( !!sym(this.attendance_column)) %>% 
+      sample
+    
+    this.d[[this.randomized_column]] = r
+  }
+  
+  assign( this.d_name, this.d )
+}
 
 
 ### NB. Any data that we want to include in a dropdown box in the
