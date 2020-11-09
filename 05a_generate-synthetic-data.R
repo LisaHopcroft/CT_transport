@@ -17,7 +17,11 @@ get_public_time = function ( id ) {
 get_private_time = function ( id ) {
   return( PATIENT.DATA %>% filter( id == id ) %>% pull(private_time.ArcPro) ) 
 }
-# 
+
+get_distance = function ( id ) {
+  return( PATIENT.DATA %>% filter( id == id ) %>% pull(private_distance.ArcPro) ) 
+}
+ 
 # get_public_time_random = function ( id ) {
 #   return( PATIENT.DATA %>% filter( id == id ) %>% pull(public_time.RANDOM) ) 
 # }
@@ -91,6 +95,62 @@ generate_attendance_data = function( base_var,
   
 }
 
+
+add_dropouts = function( d,
+                         trajectory,
+                         target_perc = 0.10,
+                         verbose = FALSE ) {
+  # d = trial_data.synthetic.MODERATE
+  # trajectory = colnames( trial_data.synthetic.MODERATE %>% select( ends_with( "public_time")) %>% select( starts_with("ATT")))  
+  
+  n_updates_made = 0
+  
+  this.focus = d %>% select( idnum, {{trajectory}} )
+  
+  total_n = this.focus %>% nrow  
+  dropout_n = ( total_n * target_perc ) %>% plyr::round_any(1)
+  
+  these.dropouts.sample = sample( this.focus %>% pull( idnum ),
+                                  dropout_n,
+                                  replace=FALSE )
+  
+  mutate_holder = rep.int( NA, nrow(d) )
+  
+  for( i in these.dropouts.sample ) {
+    this.idnum = these.dropouts.sample[i]
+    this.dropout_from_here = sample(trajectory,1)
+    
+    if ( verbose ) {
+      cat( this.dropout_from_here, "\n" )
+      cat( this.idnum, "\n" )
+    }
+    
+    these.tochange = trajectory %>% purrr::keep( ~ .x >= this.dropout_from_here )
+    
+    row.i = which( d$idnum==this.idnum )
+    
+    mutate_holder[ row.i ] = this.dropout_from_here
+    
+    for ( col.name in these.tochange ) {
+      if ( verbose ) cat( sprintf( " +" ) ) 
+      # cat( sprintf( "[%s] pre  = %d\n", col.name, d[[col.name]][row.i]  ))
+      d[[col.name]][row.i] = 0
+      # cat( sprintf( "[%s] post = %d\n", col.name, d[[col.name]][row.i]  ))
+      n_updates_made = n_updates_made + 1
+    }
+    
+    if ( verbose ) cat( sprintf("\n") )
+    
+  }
+  
+  cat( sprintf( "In adding dropouts, %d updates made.\n",
+                n_updates_made ) )
+  d$DROPOUT = mutate_holder
+  
+  return( d )
+  
+}
+
 ######################
 ##### Processing #####
 ######################
@@ -125,13 +185,13 @@ trial_data.definition =
   ### Defining the gender variable
   defData( varname = "gender",
            dist = "categorical",
-           formula = catProbs(0.50,0.50),
+           formula = genCatFormula(0.50,0.50),
            id = "idnum" ) %>% 
   ### Defining the car variable
   ### https://www.gov.scot/publications/scotlands-people-results-2015-scottish-household-survey/pages/8/
   defData( varname = "has_car",
            dist = "categorical",
-           formula = catProbs(0.70,0.30) ) %>% 
+           formula = genCatFormula(0.70,0.30) ) %>% 
   ### Defining the age variable
   defData( varname = "age",
            dist = "uniform",
@@ -181,6 +241,10 @@ public_time_definition = defDataAdd( varname = "RAW.public_time",
 private_time_definition = defDataAdd( varname = "RAW.private_time",
                                      dist    = "nonrandom",
                                      formula = "get_private_time(idnum)" )
+
+distance_definition = defDataAdd( varname = "RAW.distance",
+                                      dist    = "nonrandom",
+                                      formula = "get_distance(idnum)" )
 # 
 # public_time_definition_RANDOM = defDataAdd( varname = "RAW.public_time_random",
 #                                             dist    = "nonrandom",
@@ -204,13 +268,17 @@ private_time_definition = defDataAdd( varname = "RAW.private_time",
 
 trial_data.synthetic = addColumns(public_time_definition ,trial_data.synthetic)
 trial_data.synthetic = addColumns(private_time_definition,trial_data.synthetic)
+trial_data.synthetic = addColumns(distance_definition,trial_data.synthetic)
+
 # trial_data.synthetic = addColumns(public_time_definition_RANDOM ,trial_data.synthetic)
 # trial_data.synthetic = addColumns(private_time_definition_RANDOM,trial_data.synthetic)
 
 variables_for_synthesis = 
   trial_data.synthetic %>%
   colnames %>%
-  keep( ~str_detect(.x, "^RAW\\.") )
+  keep( ~str_detect(.x, "^RAW\\.") ) %>% 
+  # Don't want to map the distance variable
+  discard( ~str_detect(.x, "distance"))
 
 map.vars = tibble(
   idnum = trial_data.synthetic %>% pull( idnum )
@@ -318,118 +386,6 @@ for ( this.d_type in dataset_lists ) {
 ### ADD DROPOUTS
 #####################################################################
 
-add_dropouts_old = function( d,
-                         trajectory,
-                         target_perc = 0.10) {
-  # d = trial_data.synthetic.MODERATE
-  # trajectory = colnames( trial_data.synthetic.MODERATE %>% select( ends_with( "public_time")) %>% select( starts_with("ATT")))  
-  
-  n_updates_made = 0
-  
-  this.focus = d %>% select( idnum, {{trajectory}} )
-  
-  total_n = this.focus %>% nrow  
-  dropout_n = ( total_n * target_perc ) %>% plyr::round_any(1)
-  
-  this.focus_long = this.focus %>% pivot_longer( -idnum,
-                                                 names_to="appointment",
-                                                 values_to="attendance" )
-  
-  these.dropouts.all = this.focus_long %>%
-    filter( attendance == 0 ) %>% 
-    pull( idnum ) %>% unique
-  
-  these.dropouts.sample = sample( these.dropouts.all, dropout_n )
-  
-  these.dropout_targets = this.focus_long %>% 
-    filter( idnum %in% these.dropouts.sample ) %>% 
-    filter( attendance == 0 ) %>% 
-    group_by( idnum ) %>% 
-    dplyr::summarise( dropout_from_here = first( appointment ) )
-  
-  d = d %>% left_join( these.dropout_targets, by="idnum" )
-  
-  for( i in nrow(these.dropout_targets) ) {
-    this.idnum = ( these.dropout_targets %>% pull( idnum ) )[i]
-    this.dropout_from_here = ( these.dropout_targets %>% pull( dropout_from_here ) )[i]
-    
-    these.tochange = trajectory %>% purrr::keep( ~ .x > this.dropout_from_here ) 
-    
-    row.i = which( d$idnum==this.idnum ) 
-    
-    cat( this.dropout_from_here )
-    
-    for ( col.name in these.tochange ) {
-      cat( sprintf( "+" ) )
-      # cat( sprintf( "[%s] pre  = %d\n", col.name, d[[col.name]][row.i]  ))
-      d[[col.name]][row.i] = 0
-      # cat( sprintf( "[%s] post = %d\n", col.name, d[[col.name]][row.i]  ))
-      n_updates_made = n_updates_made + 1
-    }
-    cat( sprintf("\n") )
-    
-  }
-  
-  cat( sprintf( "In adding dropouts, %d updates made.\n",
-                n_updates_made ) )
-  
-  return( d )
-  
-}
-
-
-add_dropouts = function( d,
-                         trajectory,
-                         target_perc = 0.10,
-                         verbose = FALSE ) {
-  # d = trial_data.synthetic.MODERATE
-  # trajectory = colnames( trial_data.synthetic.MODERATE %>% select( ends_with( "public_time")) %>% select( starts_with("ATT")))  
-  
-  n_updates_made = 0
-  
-  this.focus = d %>% select( idnum, {{trajectory}} )
-  
-  total_n = this.focus %>% nrow  
-  dropout_n = ( total_n * target_perc ) %>% plyr::round_any(1)
-  
-  these.dropouts.sample = sample( this.focus %>% pull( idnum ),
-                                  dropout_n,
-                                  replace=FALSE )
-  
-  d = d %>% mutate( DROPOUT = NA )
-  
-  for( i in these.dropouts.sample ) {
-    this.idnum = ( this.focus %>% pull( idnum ) )[i]
-    this.dropout_from_here = sample(trajectory,1)
-    
-    d = d %>% mutate( DROPOUT = ifelse( idnum==this.idnum,
-                                        this.dropout_from_here,
-                                        NA) ) 
-    
-    these.tochange = trajectory %>% purrr::keep( ~ .x >= this.dropout_from_here )
-    
-    row.i = which( d$idnum==this.idnum ) 
-    
-    if ( verbose ) cat( this.dropout_from_here )
-    
-    for ( col.name in these.tochange ) {
-      if ( verbose ) cat( sprintf( " +" ) ) 
-      # cat( sprintf( "[%s] pre  = %d\n", col.name, d[[col.name]][row.i]  ))
-      d[[col.name]][row.i] = 0
-      # cat( sprintf( "[%s] post = %d\n", col.name, d[[col.name]][row.i]  ))
-      n_updates_made = n_updates_made + 1
-    }
-    
-    if ( verbose ) cat( sprintf("\n") )
-    
-  }
-  
-  cat( sprintf( "In adding dropouts, %d updates made.\n",
-                n_updates_made ) )
-  
-  return( d )
-  
-}
 
 public_time.trajectory = colnames( trial_data.synthetic.MODERATE %>%
                                      select( ends_with( "public_time")) %>%
@@ -476,7 +432,8 @@ trial_data.synthetic.MODERATE.DO = trial_data.synthetic.MODERATE %>%
 
 trial_data.synthetic = trial_data.synthetic %>% 
   mutate( METRIC_public_time  = RAW.public_time,
-          METRIC_private_time = RAW.private_time )
+          METRIC_private_time = RAW.private_time,
+          METRIC_distance = RAW.distance )
 
 save( trial_data.synthetic,
       trial_data.synthetic.EXTREME.DO,
