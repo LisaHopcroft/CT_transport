@@ -9,9 +9,40 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Checking synthetic data
 
+## Mapping 
+
 ```{r, results='asis'}
 these_figures = dir( "fig",
-                     pattern="05b_CHECK_.*\\.png",
+                     pattern="05b_CHECK-MAPPING_.*\\.png",
+                     full.names = TRUE )
+
+for( this_fig in these_figures ) {
+  cat( sprintf( "![%s](%s)",
+                basename(this_fig),
+                this_fig) )
+}
+```
+
+
+## Random v true 
+
+```{r, results='asis'}
+these_figures = dir( "fig",
+                     pattern="05b_CHECK-RANDOMvTRUE_.*\\.png",
+                     full.names = TRUE )
+
+for( this_fig in these_figures ) {
+  cat( sprintf( "![%s](%s)",
+                basename(this_fig),
+                this_fig) )
+}
+```
+
+## Dropout patterns
+
+```{r, results='asis'}
+these_figures = dir( "fig",
+                     pattern="05b_CHECK-DROPOUTS_.*\\.png",
                      full.names = TRUE )
 
 for( this_fig in these_figures ) {

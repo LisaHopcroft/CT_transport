@@ -8,9 +8,7 @@ library( stringr )
 library( cowplot )
 # library( tibble )
 
-
 load( "dat/05a_SYNTHETIC-DATA_n=1958.Rdat" )
-
 
 ###
 ### Some plots just to reassure me that the right things are
@@ -51,13 +49,13 @@ load( "dat/05a_SYNTHETIC-DATA_n=1958.Rdat" )
 #   ylim(0,1) +
 #   theme_bw()
 
-# 
-# this_data = trial_data.synthetic.EXTREME 
-# this_mapping = map.vars.EXTREME 
 
+RAW.columns = trial_data.synthetic.EXTREME.DO %>% colnames %>% keep( ~str_detect(.x, "^RAW\\." ) )
+ATT.columns = trial_data.synthetic.EXTREME.DO %>% colnames %>% keep( ~str_detect(.x, "^ATT\\." ) )
 
-RAW.columns = trial_data.synthetic.EXTREME %>% colnames %>% keep( ~str_detect(.x, "^RAW\\." ) )
-ATT.columns = trial_data.synthetic.EXTREME %>% colnames %>% keep( ~str_detect(.x, "^ATT\\." ) )
+#####################################################################
+### Comparing mapping values to eventual attendance #################
+#####################################################################
 
 sets_to_check = expand.grid( RAW.columns, ATT.columns ) %>% 
   set_names( "input", "output") %>% 
@@ -128,7 +126,7 @@ for( dataset_type in c( "EXTREME",
     )
     
     save_plot(
-      sprintf( "fig/05b_CHECK_%s-%s-%s.png",
+      sprintf( "fig/05b_CHECK-MAPPING_%s-%s-%s.png",
                input_variable,
                this_timepoint,
                dataset_type),
@@ -138,3 +136,106 @@ for( dataset_type in c( "EXTREME",
   }
   
 }
+
+
+#####################################################################
+### Comparing true values to random values ##########################
+#####################################################################
+
+sets_to_check = tibble(
+  true = ATT.columns %>% purrr::keep( ~ !str_detect( .x, "RANDOM" ) ),
+  random = sprintf( "%s_RANDOM", true ) )
+
+for( dataset_type in c( "EXTREME",
+                        "MODERATE" ) ) {
+  
+  this_data.name = sprintf( "trial_data.synthetic.%s.DO", dataset_type )
+  # this_mapping.name = this_data.name %>% str_replace( "trial_data.synthetic",
+  #                                                     "map.vars")
+  
+  this_data = get( this_data.name )
+  # this_mapping = get( this_mapping.name )
+  
+  for ( i in 1:nrow(sets_to_check) ) {
+    
+    true_variable  = sets_to_check$true[i]  %>% as.character()
+    random_variable = sets_to_check$random[i] %>% as.character()
+    raw_variable = true_variable %>% str_replace( "ATT\\.T\\d{1}", "RAW" )
+    #mapping_variable = true_variable %>% str_replace( "RAW", "MAP" )
+    this_timepoint = ( random_variable %>% str_match( "^.*\\.(T\\d{1})\\..*$" ) ) [2]
+    
+    i.d = this_data %>% select( idnum,
+                              {{raw_variable}},
+                             {{true_variable}},
+                               {{random_variable}}) %>%
+       pivot_longer( starts_with( "ATT"),
+                     names_to = "variable",
+                     values_to = "value" ) %>%
+      mutate( RANDOM = str_detect( variable, "RANDOM" ) ) %>%
+      mutate( variable = str_replace( variable, "_RANDOM", "" ))
+    
+    p = ggplot( i.d,
+                 aes( x=value,
+                      y=!!sym(raw_variable),
+                      group=value
+                 ) ) +
+      facet_wrap( ~RANDOM ) +
+      geom_boxplot( )
+    
+    ggsave( sprintf( "fig/05b_CHECK-RANDOMvTRUE_%s-%s-%s.png",
+               raw_variable,
+               this_timepoint,
+               dataset_type) )
+    
+  }
+  
+}
+
+#####################################################################
+### Checking dropout rates ##########################################
+#####################################################################
+
+strings_to_check = c("ATT\\..*public_time$",
+                     "ATT\\..*private_time$",
+                     "ATT\\..*public_time_RANDOM$",
+                     "ATT\\..*private_time_RANDOM$")
+
+for ( this.string in strings_to_check ) {
+dropouts.EXTREME = trial_data.synthetic.EXTREME.DO %>%
+  select( idnum, matches( this.string, perl=TRUE ) ) %>%
+  pivot_longer( -idnum,
+                names_to = "appointment",
+                values_to = "attendance" ) %>%
+  group_by( idnum ) %>%
+  dplyr::summarise( total = sum(attendance) )
+
+dropouts.MODERATE = trial_data.synthetic.MODERATE.DO %>%
+  select( idnum, matches( this.string, perl=TRUE ) ) %>%
+  pivot_longer( -idnum,
+                names_to = "appointment",
+                values_to = "attendance" ) %>%
+  group_by( idnum ) %>%
+  dplyr::summarise( total = sum(attendance) )
+
+dropouts.BOTH = dropouts.EXTREME %>%
+  inner_join( dropouts.MODERATE, by="idnum",
+              suffix = c( ".EXTREME", ".MODERATE" ) ) %>%
+  pivot_longer( -idnum,
+                names_to="dataset",
+                values_to="attendance_count" )
+
+ggplot( dropouts.BOTH,
+         aes( x=dataset,
+              y=attendance_count)) +
+  geom_boxplot()
+
+ggplot( dropouts.BOTH,
+        aes( fill=dataset,
+             x=attendance_count)) +
+  geom_bar( position="dodge")
+
+ggsave( sprintf( "fig/05b_CHECK-DROPOUTS_%s.png",
+        this.string ) )
+}
+
+
