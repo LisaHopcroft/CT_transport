@@ -9,6 +9,7 @@ library( ggbeeswarm )
 ### conda install -c r r-mgcv 
 ### Sys.setenv(PKG_CONFIG_PATH = "/../miniconda3/pkgs/r-base-3.6.1-haffb61f_2/lib/R/lib")
 ### install.packages("mgcv")
+### To get this working, required a reinstall of R packages
 library( mgcv )
 
 # load( "dat/00_PREPARATION.Rdat" )
