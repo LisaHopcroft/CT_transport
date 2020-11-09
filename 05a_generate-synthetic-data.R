@@ -47,6 +47,8 @@ generate_attendance_data = function( base_var,
                                      trial_vars,
                                      map_vars,
                                      timepoints,
+                                     modify_mask = NULL,
+                                     modify_val,
                                      rmin=15, rmax=90, tmin=0 ) {
   
   map_var = base_var %>% str_replace( "RAW.", "MAP." )
@@ -60,6 +62,13 @@ generate_attendance_data = function( base_var,
   
   trial_vars = trial_vars %>% 
     mutate( p = map_dat )
+  
+  if ( !is.null( modify_mask ) ) {
+    ### Need to chose the max so that we don't end up with values
+    ### less than 0.
+    trial_vars$p[ modify_mask ] = max(c(trial_vars$p[ modify_mask ] + modify_val,
+                                        0))
+  }
   
   # ggplot( trial_vars, aes(x=!!sym(base_var),y=p) ) +
   #   geom_point() + ggtitle( base_var )
@@ -113,11 +122,21 @@ timepoint.list = sprintf( "T%d", 0:4 )
 #####################################################################
 
 trial_data.definition = 
-  ### Defining the arm variable
-  defData( varname = "arm",
+  ### Defining the gender variable
+  defData( varname = "gender",
            dist = "categorical",
            formula = catProbs(0.50,0.50),
-           id = "idnum" )
+           id = "idnum" ) %>% 
+  ### Defining the car variable
+  ### https://www.gov.scot/publications/scotlands-people-results-2015-scottish-household-survey/pages/8/
+  defData( varname = "has_car",
+           dist = "categorical",
+           formula = catProbs(0.70,0.30) ) %>% 
+  ### Defining the age variable
+  defData( varname = "age",
+           dist = "uniform",
+           formula = "18;80") 
+
 
 
 #####################################################################
@@ -132,11 +151,27 @@ trial_data.definition =
 trial_data.synthetic = genData( number_of_participants,
                                        trial_data.definition )
 
+### Defining the arm variable
+trial_data.synthetic = trial_data.synthetic %>% 
+  trtAssign( nTrt = 2,
+             balanced = TRUE,
+             grpName = "arm" )
+
+### Updating gender to Female/Male
+trial_data.synthetic = trial_data.synthetic %>% 
+  mutate( gender = recode( gender,
+                           "1"="Female",
+                           "2"="Male") )
+
+### Updating has_car to Yes/No
+trial_data.synthetic = trial_data.synthetic %>% 
+  mutate( has_car = recode( has_car,
+                           "1"="Yes",
+                           "2"="No") )
+
 #####################################################################
 ### Generate attendance data based on distance ######################
 #####################################################################
-
-
 
 ### Generating distance information
 public_time_definition = defDataAdd( varname = "RAW.public_time",
@@ -206,11 +241,14 @@ for ( this.raw_var in variables_for_synthesis ) {
                                       this.raw_var %>%
                                         str_replace( "^RAW\\.", "" ) %>% 
                                         str_replace( "_random", "" )) %>% get
+  this.mask = ( trial_data.synthetic.MODERATE %>% pull( has_car ) ) == "Yes"
   
   attendance.out = generate_attendance_data( base_var = this.raw_var,
                                              trial_vars = trial_data.synthetic.MODERATE,
                                              map_vars = map.vars.MODERATE,
                                              timepoints = timepoint.list,
+                                             modify_mask = this.mask,
+                                             modify_val = -0.10,
                                              rmin = these.mapping_parameters$rmin,
                                              rmax = these.mapping_parameters$rmax,
                                              tmin = these.mapping_parameters$tmin ) 
@@ -234,12 +272,14 @@ for ( this.raw_var in variables_for_synthesis ) {
                                       this.raw_var %>%
                                         str_replace( "^RAW\\.", "" ) %>% 
                                         str_replace( "_random", "" )) %>% get
+  this.mask = ( trial_data.synthetic.EXTREME %>% pull( has_car ) ) == "Yes"
   
   attendance.out = generate_attendance_data( this.raw_var,
                                              trial_data.synthetic.EXTREME,
                                              map.vars.EXTREME,
                                              timepoint.list,
-                                             rmin = these.mapping_parameters$rmin,
+                                             modify_mask = this.mask,
+                                             modify_val = -0.20,                                             rmin = these.mapping_parameters$rmin,
                                              rmax = these.mapping_parameters$rmax,
                                              tmin = these.mapping_parameters$tmin
                                                )
@@ -274,7 +314,94 @@ for ( this.d_type in dataset_lists ) {
   assign( this.d_name, this.d )
 }
 
+#####################################################################
+### ADD DROPOUTS
+#####################################################################
 
+add_dropouts = function( d,
+                         trajectory,
+                         target_perc = 0.10) {
+  # d = trial_data.synthetic.MODERATE
+  # trajectory = colnames( trial_data.synthetic.MODERATE %>% select( ends_with( "public_time")) %>% select( starts_with("ATT")))  
+  
+  this.focus = d %>% select( idnum, {{trajectory}} )
+  
+  total_n = this.focus %>% nrow  
+  dropout_n = ( total_n * target_perc ) %>% plyr::round_any(1)
+  
+  this.focus_long = this.focus %>% pivot_longer( -idnum,
+                                                 names_to="appointment",
+                                                 values_to="attendance" )
+  
+  these.dropouts.all = this.focus_long %>%
+    filter( attendance == 0 ) %>% 
+    pull( idnum ) %>% unique
+  
+  these.dropouts.sample = sample( these.dropouts.all, dropout_n )
+  
+  these.dropout_targets = this.focus_long %>% 
+    filter( idnum %in% these.dropouts.sample ) %>% 
+    filter( attendance == 0 ) %>% 
+    group_by( idnum ) %>% 
+    dplyr::summarise( dropout_from_here = first( appointment ) )
+  
+  d = d %>% left_join( these.dropout_targets, by="idnum" )
+  
+  for( i in nrow(these.dropout_targets) ) {
+    this.idnum = ( these.dropout_targets %>% pull( idnum ) )[i]
+    this.dropout_from_here = ( these.dropout_targets %>% pull( dropout_from_here ) )[i]
+    
+    these.tochange = trajectory %>% purrr::keep( ~ .x > this.dropout_from_here ) 
+    
+    row.i = which( d$idnum==this.idnum ) 
+    
+    for ( col.name in these.tochange ) {
+      cat( sprintf( "[%s] pre  = %d\n", col.name, d[[col.name]][row.i]  ))
+      d[[col.name]][row.i] = 0
+      cat( sprintf( "[%s] post = %d\n", col.name, d[[col.name]][row.i]  ))
+      
+    }
+    
+  }
+  
+  return( d )
+  
+}
+
+public_time.trajectory = colnames( trial_data.synthetic.MODERATE %>%
+                                     select( ends_with( "public_time")) %>%
+                                     select( starts_with("ATT")) )  
+private_time.trajectory = colnames( trial_data.synthetic.MODERATE %>%
+                                      select( ends_with( "private_time")) %>%
+                                      select( starts_with("ATT")) )
+public_time_RANDOM.trajectory = sprintf( "%s_RANDOM", public_time.trajectory )
+private_time_RANDOM.trajectory = sprintf( "%s_RANDOM", private_time.trajectory )
+
+EXTREME.DO_rate = 0.25
+
+trial_data.synthetic.EXTREME.DO = trial_data.synthetic.EXTREME %>%
+  add_dropouts( public_time.trajectory, target_perc = EXTREME.DO_rate ) %>% 
+  dplyr::rename( DO.public_time = dropout_from_here ) %>% 
+  add_dropouts( private_time.trajectory, target_perc = EXTREME.DO_rate ) %>%
+  dplyr::rename( DO.private_time = dropout_from_here ) %>% 
+  add_dropouts( public_time_RANDOM.trajectory, target_perc = EXTREME.DO_rate ) %>% 
+  dplyr::rename( DO.public_time_RANDOM = dropout_from_here ) %>% 
+  add_dropouts( private_time_RANDOM.trajectory, target_perc = EXTREME.DO_rate ) %>%  
+  dplyr::rename( DO.private_time_RANDOM = dropout_from_here )
+
+MODERATE.DO_rate = 0.10
+
+trial_data.synthetic.MODERATE.DO = trial_data.synthetic.MODERATE %>%
+  add_dropouts( public_time.trajectory, target_perc = MODERATE.DO_rate ) %>% 
+  dplyr::rename( DO.public_time = dropout_from_here ) %>% 
+  add_dropouts( private_time.trajectory, target_perc = MODERATE.DO_rate ) %>%
+  dplyr::rename( DO.private_time = dropout_from_here ) %>% 
+  add_dropouts( public_time_RANDOM.trajectory, target_perc = MODERATE.DO_rate ) %>% 
+  dplyr::rename( DO.public_time_RANDOM = dropout_from_here ) %>% 
+  add_dropouts( private_time_RANDOM.trajectory, target_perc = MODERATE.DO_rate ) %>%  
+  dplyr::rename( DO.private_time_RANDOM = dropout_from_here )
+
+  
 ### NB. Any data that we want to include in a dropdown box in the
 ###     resulting Shiny app should be prefixed with "METRIC_".  Also,
 ###     make sure that these are readable, as text in the dropdown
@@ -287,9 +414,9 @@ trial_data.synthetic = trial_data.synthetic %>%
           METRIC_private_time = RAW.private_time )
 
 save( trial_data.synthetic,
-      trial_data.synthetic.EXTREME,
+      trial_data.synthetic.EXTREME.DO,
       map.vars.EXTREME,
-      trial_data.synthetic.MODERATE,
+      trial_data.synthetic.MODERATE.DO,
       map.vars.MODERATE,
       number_of_participants,
       timepoint.list,
