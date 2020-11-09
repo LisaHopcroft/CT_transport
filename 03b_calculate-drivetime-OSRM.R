@@ -77,13 +77,11 @@ for ( i in 1:num_batches ) {
                 nrow( this_batch )) )
   
   ### Travel time distance
-  this_duration_time_matrix = osrmTable(loc = this_batch)
-  
-  ### Extract the distances to the hospital
-  this_duration_time_to_hospital = this_duration_time_matrix$durations[,as.character( hospital_mask )]
-  
-  ### Save the distances to the hospital
-  duration_time_to_hospital[this_duration_time_to_hospital %>% names %>% as.numeric] = this_duration_time_to_hospital
+  this_time_matrix = osrmTable(loc = this_batch,
+                               measure = "duration")
+  ### Extract and save the time to the hospital
+  this_time_to_hospital = this_time_matrix$durations[,as.character( hospital_mask )]
+  duration_time_to_hospital[this_time_to_hospital %>% names %>% as.numeric] = this_time_to_hospital
   
 }
 
