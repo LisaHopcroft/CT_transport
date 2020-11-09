@@ -318,11 +318,13 @@ for ( this.d_type in dataset_lists ) {
 ### ADD DROPOUTS
 #####################################################################
 
-add_dropouts = function( d,
+add_dropouts_old = function( d,
                          trajectory,
                          target_perc = 0.10) {
   # d = trial_data.synthetic.MODERATE
   # trajectory = colnames( trial_data.synthetic.MODERATE %>% select( ends_with( "public_time")) %>% select( starts_with("ATT")))  
+  
+  n_updates_made = 0
   
   this.focus = d %>% select( idnum, {{trajectory}} )
   
@@ -355,14 +357,75 @@ add_dropouts = function( d,
     
     row.i = which( d$idnum==this.idnum ) 
     
+    cat( this.dropout_from_here )
+    
     for ( col.name in these.tochange ) {
-      cat( sprintf( "[%s] pre  = %d\n", col.name, d[[col.name]][row.i]  ))
+      cat( sprintf( "+" ) )
+      # cat( sprintf( "[%s] pre  = %d\n", col.name, d[[col.name]][row.i]  ))
       d[[col.name]][row.i] = 0
-      cat( sprintf( "[%s] post = %d\n", col.name, d[[col.name]][row.i]  ))
-      
+      # cat( sprintf( "[%s] post = %d\n", col.name, d[[col.name]][row.i]  ))
+      n_updates_made = n_updates_made + 1
     }
+    cat( sprintf("\n") )
     
   }
+  
+  cat( sprintf( "In adding dropouts, %d updates made.\n",
+                n_updates_made ) )
+  
+  return( d )
+  
+}
+
+
+add_dropouts = function( d,
+                         trajectory,
+                         target_perc = 0.10,
+                         verbose = FALSE ) {
+  # d = trial_data.synthetic.MODERATE
+  # trajectory = colnames( trial_data.synthetic.MODERATE %>% select( ends_with( "public_time")) %>% select( starts_with("ATT")))  
+  
+  n_updates_made = 0
+  
+  this.focus = d %>% select( idnum, {{trajectory}} )
+  
+  total_n = this.focus %>% nrow  
+  dropout_n = ( total_n * target_perc ) %>% plyr::round_any(1)
+  
+  these.dropouts.sample = sample( this.focus %>% pull( idnum ),
+                                  dropout_n,
+                                  replace=FALSE )
+  
+  d = d %>% mutate( DROPOUT = NA )
+  
+  for( i in these.dropouts.sample ) {
+    this.idnum = ( this.focus %>% pull( idnum ) )[i]
+    this.dropout_from_here = sample(trajectory,1)
+    
+    d = d %>% mutate( DROPOUT = ifelse( idnum==this.idnum,
+                                        this.dropout_from_here,
+                                        NA) ) 
+    
+    these.tochange = trajectory %>% purrr::keep( ~ .x >= this.dropout_from_here )
+    
+    row.i = which( d$idnum==this.idnum ) 
+    
+    if ( verbose ) cat( this.dropout_from_here )
+    
+    for ( col.name in these.tochange ) {
+      if ( verbose ) cat( sprintf( " +" ) ) 
+      # cat( sprintf( "[%s] pre  = %d\n", col.name, d[[col.name]][row.i]  ))
+      d[[col.name]][row.i] = 0
+      # cat( sprintf( "[%s] post = %d\n", col.name, d[[col.name]][row.i]  ))
+      n_updates_made = n_updates_made + 1
+    }
+    
+    if ( verbose ) cat( sprintf("\n") )
+    
+  }
+  
+  cat( sprintf( "In adding dropouts, %d updates made.\n",
+                n_updates_made ) )
   
   return( d )
   
@@ -370,10 +433,12 @@ add_dropouts = function( d,
 
 public_time.trajectory = colnames( trial_data.synthetic.MODERATE %>%
                                      select( ends_with( "public_time")) %>%
-                                     select( starts_with("ATT")) )  
+                                     select( starts_with("ATT")) )  %>%
+  purrr::discard(~ str_detect( .x, "T0" ) )
 private_time.trajectory = colnames( trial_data.synthetic.MODERATE %>%
                                       select( ends_with( "private_time")) %>%
-                                      select( starts_with("ATT")) )
+                                      select( starts_with("ATT")) ) %>%
+  purrr::discard(~ str_detect( .x, "T0" ) )
 public_time_RANDOM.trajectory = sprintf( "%s_RANDOM", public_time.trajectory )
 private_time_RANDOM.trajectory = sprintf( "%s_RANDOM", private_time.trajectory )
 
@@ -381,25 +446,25 @@ EXTREME.DO_rate = 0.25
 
 trial_data.synthetic.EXTREME.DO = trial_data.synthetic.EXTREME %>%
   add_dropouts( public_time.trajectory, target_perc = EXTREME.DO_rate ) %>% 
-  dplyr::rename( DO.public_time = dropout_from_here ) %>% 
+  dplyr::rename( DO.public_time = DROPOUT ) %>% 
   add_dropouts( private_time.trajectory, target_perc = EXTREME.DO_rate ) %>%
-  dplyr::rename( DO.private_time = dropout_from_here ) %>% 
+  dplyr::rename( DO.private_time = DROPOUT ) %>% 
   add_dropouts( public_time_RANDOM.trajectory, target_perc = EXTREME.DO_rate ) %>% 
-  dplyr::rename( DO.public_time_RANDOM = dropout_from_here ) %>% 
+  dplyr::rename( DO.public_time_RANDOM = DROPOUT ) %>% 
   add_dropouts( private_time_RANDOM.trajectory, target_perc = EXTREME.DO_rate ) %>%  
-  dplyr::rename( DO.private_time_RANDOM = dropout_from_here )
+  dplyr::rename( DO.private_time_RANDOM = DROPOUT )
 
 MODERATE.DO_rate = 0.10
 
 trial_data.synthetic.MODERATE.DO = trial_data.synthetic.MODERATE %>%
   add_dropouts( public_time.trajectory, target_perc = MODERATE.DO_rate ) %>% 
-  dplyr::rename( DO.public_time = dropout_from_here ) %>% 
+  dplyr::rename( DO.public_time = DROPOUT ) %>% 
   add_dropouts( private_time.trajectory, target_perc = MODERATE.DO_rate ) %>%
-  dplyr::rename( DO.private_time = dropout_from_here ) %>% 
+  dplyr::rename( DO.private_time = DROPOUT ) %>% 
   add_dropouts( public_time_RANDOM.trajectory, target_perc = MODERATE.DO_rate ) %>% 
-  dplyr::rename( DO.public_time_RANDOM = dropout_from_here ) %>% 
+  dplyr::rename( DO.public_time_RANDOM = DROPOUT ) %>% 
   add_dropouts( private_time_RANDOM.trajectory, target_perc = MODERATE.DO_rate ) %>%  
-  dplyr::rename( DO.private_time_RANDOM = dropout_from_here )
+  dplyr::rename( DO.private_time_RANDOM = DROPOUT )
 
   
 ### NB. Any data that we want to include in a dropdown box in the
