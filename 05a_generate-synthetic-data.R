@@ -229,6 +229,15 @@ trial_data.synthetic = trial_data.synthetic %>%
                            "1"="Yes",
                            "2"="No") )
 
+### Adding a random start date
+date_range = seq( ymd("2018-01-01"),
+                  ymd("2019-12-31"), by="day")
+trial_data.synthetic = trial_data.synthetic %>% 
+  mutate( DOR = sample(date_range,
+                       size=number_of_participants,
+                       replace=TRUE) )
+
+
 #####################################################################
 ### Generate attendance data based on distance ######################
 #####################################################################
