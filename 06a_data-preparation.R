@@ -7,13 +7,13 @@ library( purrr )
 library( stringr )
 library( cowplot )
 library( tidyr )
+library( lubridate )
 # library( tibble )
 
 load( "dat/05a_SYNTHETIC-DATA_n=1958.Rdat" )
 
 n.timepoints = timepoint.list %>% length
 
- 
 generate_additional_variables = function(d) {
   d.new = d %>% 
     group_by(idnum) %>%
@@ -94,13 +94,68 @@ generate_additional_variables = function(d) {
   return( d.new )
 }
 
-
+generate_appointment_dates = function( d ) {
+  d.new = d 
+  
+  
+}
+  
 EXTREME_d  = generate_additional_variables( trial_data.synthetic.EXTREME.DO  )
 MODERATE_d = generate_additional_variables( trial_data.synthetic.MODERATE.DO )
 
+subsets_to_generate = tribble(
+  ~dataset_type, ~att_string   , ~calculatedvars_string, ~new_name                ,
+  "EXTREME"    , ".public_time" , ".public"              , "EXTREME_PUBLIC_BIAS.d"  ,
+  "EXTREME"    , ".private_time", ".private"             , "EXTREME_PRIVATE_BIAS.d" ,
+  "MODERATE"   , ".public_time" , ".public"              , "MODERATE_PUBLIC_BIAS.d" ,
+  "MODERATE"   , ".private_time", ".private"             , "MODERATE_PRIVATE_BIAS.d",
+  "EXTREME"    , ".public_time_RANDOM", ".public_RANDOM" , "NEUTRAL.d"
+)
+
+remove_text = function(x,s) {
+  return( str_remove( x, s ) )
+}
+
+for ( i in 1:nrow( subsets_to_generate ) ) {
+  
+  this.dataset_type = ( subsets_to_generate %>% pull( dataset_type ) ) [i]
+  this.att_string = ( subsets_to_generate %>% pull( att_string ) ) [i]
+  this.calculatedvars_string = ( subsets_to_generate %>% pull( calculatedvars_string ) ) [i]
+  this.new_name = ( subsets_to_generate %>% pull( new_name ) ) [i]
+  
+  cat( sprintf( "Generating %s...", this.new_name) )
+  
+  this.d = get( sprintf( "%s_d", this.dataset_type ) ) %>% 
+    select( idnum, DOR, arm, gender, age, has_car,
+            starts_with("RAW"),
+            matches( sprintf( "^ATT\\..*%s$",this.att_string), perl=TRUE ),
+            matches( sprintf("^num.*%s$",this.calculatedvars_string), perl=TRUE ),
+            matches( sprintf("^perc.*%s$",this.calculatedvars_string), perl=TRUE ) ) %>%
+    rename_at( vars( starts_with("ATT") ),
+               ~remove_text(.,this.att_string) ) %>% 
+    rename_at( vars( starts_with("num") ),
+               ~remove_text(.,this.calculatedvars_string) ) %>% 
+    rename_at( vars( starts_with("perc") ),
+               ~remove_text(.,this.calculatedvars_string) ) %>% 
+  mutate( DATE.T0 = DOR + weeks(1) ) %>% 
+  mutate( DATE.T1 = ifelse( ATT.T1==1, DOR + months( 1), NA) ) %>% 
+  mutate( DATE.T2 = ifelse( ATT.T2==1, DOR + months( 3), NA) ) %>% 
+  mutate( DATE.T3 = ifelse( ATT.T3==1, DOR + months( 6), NA) ) %>% 
+  mutate( DATE.T4 = ifelse( ATT.T4==1, DOR + months(12), NA) )
+  
+  assign( this.new_name, this.d )
+  
+  cat( "done.\n" )
+
+}
+
+
 save( trial_data.synthetic,
-      EXTREME_d,
-      MODERATE_d,
+      EXTREME_PUBLIC_BIAS.d,
+      EXTREME_PRIVATE_BIAS.d,
+      MODERATE_PUBLIC_BIAS.d,
+      MODERATE_PRIVATE_BIAS.d,
+      NEUTRAL.d,
       number_of_participants,
       timepoint.list,
       file=sprintf( "dat/06a_LEARNING-DATASET_n=%d.Rdat",
