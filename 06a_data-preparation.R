@@ -18,8 +18,8 @@ generate_additional_variables = function(d) {
   d.new = d %>% 
     group_by(idnum) %>%
     ####################################################################
-  ### NUMBER OF APPOINTMENTS
-  ####################################################################
+    ### NUMBER OF APPOINTMENTS
+    ####################################################################
   
   ### Public biased
   mutate( num_appointments_attended.public =
@@ -94,12 +94,6 @@ generate_additional_variables = function(d) {
   return( d.new )
 }
 
-generate_appointment_dates = function( d ) {
-  d.new = d 
-  
-  
-}
-  
 EXTREME_d  = generate_additional_variables( trial_data.synthetic.EXTREME.DO  )
 MODERATE_d = generate_additional_variables( trial_data.synthetic.MODERATE.DO )
 
@@ -127,6 +121,7 @@ for ( i in 1:nrow( subsets_to_generate ) ) {
   
   this.d = get( sprintf( "%s_d", this.dataset_type ) ) %>% 
     select( idnum, DOR, arm, gender, age, has_car,
+            starts_with("SIMD16"),
             starts_with("RAW"),
             matches( sprintf( "^ATT\\..*%s$",this.att_string), perl=TRUE ),
             matches( sprintf("^num.*%s$",this.calculatedvars_string), perl=TRUE ),
@@ -143,12 +138,17 @@ for ( i in 1:nrow( subsets_to_generate ) ) {
   mutate( DATE.T3 = ifelse( ATT.T3==1, DOR + months( 6), NA) ) %>% 
   mutate( DATE.T4 = ifelse( ATT.T4==1, DOR + months(12), NA) )
   
-  assign( this.new_name, this.d )
+  this.complete_mask = complete.cases( this.d %>% select( -starts_with("DATE")))
   
-  cat( "done.\n" )
+  assign( this.new_name, this.d[this.complete_mask,] )
+  
+  this.n = this.complete_mask %>% sum
+  
+  cat( sprintf( "done (%d entries).\n", this.n ) )
 
 }
 
+number_of_participants = nrow( EXTREME_PUBLIC_BIAS.d )
 
 save( trial_data.synthetic,
       EXTREME_PUBLIC_BIAS.d,

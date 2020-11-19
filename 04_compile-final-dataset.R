@@ -11,12 +11,14 @@ library( ggbeeswarm )
 ### install.packages("mgcv")
 ### To get this working, required a reinstall of R packages
 library( mgcv )
+library( cowplot )
 
 # load( "dat/00_PREPARATION.Rdat" )
 load( "dat/01a_RANDOM-POSTCODES_NEW_n=2000.Rdat" )
 load( "dat/02b_PUBLIC-journey-times_n=2000.Rdat" )
 load( "dat/03a_PRIVATE-journey-times_n=2000.Rdat" )
 load( "dat/03b_PRIVATE-journey-times_n=2000.Rdat" )
+load( "dat/01d_SIMD-information_n=2000.Rdat" )
 
 PRIVATE_journey_times.fastest.ArcPro %>% nrow
 PRIVATE_journey_times.fastest.OSRM %>% nrow
@@ -130,7 +132,8 @@ ggplot( TRAVEL.data,
         subtitle="Identity indicated by dashed blue line")
 
 PATIENT.DATA = postcode_holder %>%
-  inner_join( TRAVEL.data, by="postcode" )
+  inner_join( TRAVEL.data, by="postcode" ) %>% 
+  inner_join( SIMD_holder, by=c("postcode","idnum") )
 
 PATIENT.DATA = PATIENT.DATA %>%
   mutate( id = 1:nrow( PATIENT.DATA )) %>% 
@@ -139,16 +142,35 @@ PATIENT.DATA = PATIENT.DATA %>%
 
 psych::describe( PATIENT.DATA %>% select( public_time.BJP, private_time.ArcPro, private_time.OSRM ) )
 
-PATIENT.DATA.boxplot_data = PATIENT.DATA %>% 
+PATIENT.DATA.TRAVEL_boxplot_data = PATIENT.DATA %>% 
   select( id, public_time.BJP, private_time.ArcPro, private_time.OSRM ) %>% 
   pivot_longer( -id,
                 names_to="source",
                 values_to="minutes")
 
-ggplot( PATIENT.DATA.boxplot_data,
+ggplot( PATIENT.DATA.TRAVEL_boxplot_data,
         aes( x=source,
              y=minutes )) +
   geom_violin()
+
+
+SIMD16_Decile.barplot = ggplot( PATIENT.DATA,
+        aes( x=SIMD16_Decile )) +
+  geom_histogram() +
+  scale_x_continuous(breaks=1:10) 
+
+
+SIMD16_Quintile.barplot = ggplot( PATIENT.DATA,
+                                aes( x=SIMD16_Quintile )) +
+  geom_histogram() +
+  scale_x_continuous(breaks=1:5) 
+
+SIMD16_Vigintile.barplot = ggplot( PATIENT.DATA,
+                                aes( x=SIMD16_Vigintile )) +
+  geom_histogram() +
+  scale_x_continuous(breaks=1:20) 
+
+
 
 save( PATIENT.DATA,
       file="dat/04_COMPILED-DATASET.Rdat" )

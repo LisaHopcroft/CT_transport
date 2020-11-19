@@ -14,7 +14,7 @@ library( rpart.plot )
 # library( future ) # parallel processing & decrease computation time
 # library( xgboost ) # boosted trees
 
-load( "dat/06a_LEARNING-DATASET_n=1958.Rdat" )
+load( "dat/06a_LEARNING-DATASET_n=1912.Rdat" )
 
 ### https://cran.r-project.org/web/packages/parsnip/vignettes/parsnip_Intro.html
 ### https://towardsdatascience.com/modelling-with-tidymodels-and-parsnip-bae2c01c131c
@@ -49,7 +49,7 @@ predict_function = function(split,
    #    set_engine( "ranger", verbose = TRUE ) %>% 
    #    set_mode( "regression" )
    
-   this.m.fit = this.m %>% fit( TARGET ~ ., analysis_set )
+   this.m.fit = model %>% fit( TARGET ~ ., analysis_set )
    these.variable_importance = this.m.fit$fit$variable.importance
    
    # rand_forest.model.fit = rand_forest.model %>%
@@ -125,7 +125,7 @@ perform_random_forest_analysis = function( data,
       
       results_cv = predict_function(split  = CV10_partitions$splits[[this.partition]],
                                      id    = CV10_partitions$id[this.partition],
-                                     model = this.m )
+                                     model = model )
       
       variable_importance.update = tibble( id = CV10_partitions$id[this.partition] ) 
       
@@ -159,7 +159,10 @@ DEFAULT.predictor_variables = quos( age,
                                     has_car,
                                     RAW.public_time,
                                     RAW.private_time,
-                                    RAW.distance )
+                                    RAW.distance,
+                                    SIMD16_Quintile,
+                                    SIMD16_Decile,
+                                    SIMD16_Vigintile)
 
 ### To do:
 ### (1) Performance statistics

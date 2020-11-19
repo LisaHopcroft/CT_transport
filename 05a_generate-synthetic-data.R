@@ -5,6 +5,7 @@ library( sigmoid )
 library( ggplot2 )
 library( purrr )
 library( stringr )
+library( lubridate )
 
 #####################
 ##### FUNCTIONS #####
@@ -22,9 +23,17 @@ get_distance = function ( id ) {
   return( PATIENT.DATA %>% filter( id == id ) %>% pull(private_distance.ArcPro) ) 
 }
  
-# get_public_time_random = function ( id ) {
-#   return( PATIENT.DATA %>% filter( id == id ) %>% pull(public_time.RANDOM) ) 
-# }
+get_SIMD16_Decile_random = function ( id ) {
+  return( PATIENT.DATA %>% filter( id == id ) %>% pull(SIMD16_Decile) )
+}
+
+get_SIMD16_Quintile_random = function ( id ) {
+  return( PATIENT.DATA %>% filter( id == id ) %>% pull(SIMD16_Quintile) )
+}
+
+get_SIMD16_Vigintile_random = function ( id ) {
+  return( PATIENT.DATA %>% filter( id == id ) %>% pull(SIMD16_Vigintile) )
+}
 # 
 # get_private_time_random = function ( id ) {
 #   return( PATIENT.DATA %>% filter( id == id ) %>% pull(private_time.RANDOM) ) 
@@ -254,10 +263,19 @@ private_time_definition = defDataAdd( varname = "RAW.private_time",
 distance_definition = defDataAdd( varname = "RAW.distance",
                                       dist    = "nonrandom",
                                       formula = "get_distance(idnum)" )
-# 
-# public_time_definition_RANDOM = defDataAdd( varname = "RAW.public_time_random",
-#                                             dist    = "nonrandom",
-#                                             formula = "get_public_time_random(idnum)" )
+
+SIMD16_Vigintile_definition = defDataAdd( varname = "SIMD16_Vigintile",
+                                            dist    = "nonrandom",
+                                            formula = "get_SIMD16_Vigintile_random(idnum)" )
+
+SIMD16_Decile_definition = defDataAdd( varname = "SIMD16_Decile",
+                                          dist    = "nonrandom",
+                                          formula = "get_SIMD16_Decile_random(idnum)" )
+
+SIMD16_Quintile_definition = defDataAdd( varname = "SIMD16_Quintile",
+                                          dist    = "nonrandom",
+                                          formula = "get_SIMD16_Quintile_random(idnum)" )
+
 # 
 # private_time_definition_RANDOM = defDataAdd( varname = "RAW.private_time_random",
 #                                              dist    = "nonrandom",
@@ -278,6 +296,11 @@ distance_definition = defDataAdd( varname = "RAW.distance",
 trial_data.synthetic = addColumns(public_time_definition ,trial_data.synthetic)
 trial_data.synthetic = addColumns(private_time_definition,trial_data.synthetic)
 trial_data.synthetic = addColumns(distance_definition,trial_data.synthetic)
+trial_data.synthetic = addColumns(SIMD16_Quintile_definition,trial_data.synthetic)
+trial_data.synthetic = addColumns(SIMD16_Decile_definition,trial_data.synthetic)
+trial_data.synthetic = addColumns(SIMD16_Vigintile_definition,trial_data.synthetic)
+
+
 
 # trial_data.synthetic = addColumns(public_time_definition_RANDOM ,trial_data.synthetic)
 # trial_data.synthetic = addColumns(private_time_definition_RANDOM,trial_data.synthetic)
@@ -440,8 +463,8 @@ trial_data.synthetic.MODERATE.DO = trial_data.synthetic.MODERATE %>%
 ###     the drop down box.
 
 trial_data.synthetic = trial_data.synthetic %>% 
-  mutate( METRIC_public_time  = RAW.public_time,
-          METRIC_private_time = RAW.private_time,
+  mutate( METRIC_public_transport_time  = RAW.public_time,
+          METRIC_private_transport_time = RAW.private_time,
           METRIC_distance = RAW.distance )
 
 save( trial_data.synthetic,
