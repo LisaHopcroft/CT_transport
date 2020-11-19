@@ -96,7 +96,7 @@ save( postcode.objects,
       marker_palette,
       centre_longitude,
       centre_latitude,
-      file=sprintf( "dat/02_MAPPING-INFORMATION_n=%d.Rdat",
+      file=sprintf( "dat/01c_MAPPING-INFORMATION_n=%d.Rdat",
                     number_of_participants ) )
 
 
