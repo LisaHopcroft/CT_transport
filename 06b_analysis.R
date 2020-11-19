@@ -10,11 +10,18 @@ library( tidymodels )
 # library( rules )
 library( knitr )
 library( rpart.plot )
+library( RColorBrewer )
 # library( baguette ) # bagged trees
 # library( future ) # parallel processing & decrease computation time
 # library( xgboost ) # boosted trees
 
 load( "dat/06a_LEARNING-DATASET_n=1912.Rdat" )
+
+analysis_colours = c(
+   NEUTRAL = grey(0.3),
+   PRIVATE_BIAS = brewer.pal(7,"Paired")[2],
+   PUBLIC_BIAS = brewer.pal(7,"Paired")[4]
+)
 
 ### https://cran.r-project.org/web/packages/parsnip/vignettes/parsnip_Intro.html
 ### https://towardsdatascience.com/modelling-with-tidymodels-and-parsnip-bae2c01c131c
@@ -176,93 +183,170 @@ NEUTRAL_NUMAPPT.out = perform_random_forest_analysis( data  = NEUTRAL.d,
 )
 
 MODERATE_PRIVATE_BIAS_NUMAPPT.out = perform_random_forest_analysis( data  = MODERATE_PRIVATE_BIAS.d,
-                                                      model = rand_forest.model,
-                                                      predictor_variables = DEFAULT.predictor_variables,
-                                                      target_variable = quo(num_appointments_attended)
+                                                                    model = rand_forest.model,
+                                                                    predictor_variables = DEFAULT.predictor_variables,
+                                                                    target_variable = quo(num_appointments_attended)
 )
 
 
+MODERATE_PUBLIC_BIAS_NUMAPPT.out = perform_random_forest_analysis( data  = MODERATE_PUBLIC_BIAS.d,
+                                                                   model = rand_forest.model,
+                                                                   predictor_variables = DEFAULT.predictor_variables,
+                                                                   target_variable = quo(num_appointments_attended)
+)
 
-# ggplot( data=variable_importance.update %>% 
-#            pivot_longer( -id,
-#                          names_to  ="variable",
-#                          values_to = "importance") %>% 
-#            mutate( variable2 = factor( variable )) %>% 
-#            mutate( variable2 = fct_reorder( variable2, desc(importance) )),
-#         aes(x=variable2,
-#             y=importance,
-#             group=1)) +
-#    geom_point( ) +
-#    geom_line( ) +
-#    ggtitle( "Neutral dataset" )
+#####################################################################
+### VARIABLE IMPORTANCE #############################################
+#####################################################################
 
-# 
-#    
-# rand_forest.model.fit.PREDICTIONS = rand_forest.model.fit %>% 
-#    predict( new_data = test ) %>%
-#    bind_cols( test ) %>% 
-#    mutate( .pred_round = plyr::round_any( .pred, 1 ) )
-# 
-# ### Direct comparison of predictions (y) and actual data (x)
-# ggplot( data = rand_forest.model.fit.PREDICTIONS,
-#         aes( x=num_appointments_attended,
-#              y=.pred) ) + geom_point()
-# 
-# 
-# ### Measurement of fit, data are numeric
-# rand_forest.model.fit.PREDICTIONS %>%
-#    metrics(num_appointments_attended, .pred_round) %>%
-#    select(-.estimator) 
-# 
-# ### Measurement of fit, data are classes
-# rand_forest.model.fit.PREDICTIONS.classification = rand_forest.model.fit.PREDICTIONS %>%
-#    mutate( num_appointments_attended = factor( num_appointments_attended, levels=0:5 ) ) %>% 
-#    mutate( .pred_round = factor( .pred_round, levels=0:5 ) )
-# 
-# rand_forest.model.fit.PREDICTIONS.classification %>% 
-#    metrics(num_appointments_attended, .pred_round) %>% 
-#    select(-.estimator) %>%
-#    filter(.metric == "accuracy") 
-# 
-# tibble(
-#    "precision" = 
-#       precision(rand_forest.model.fit.PREDICTIONS.classification,
-#                 num_appointments_attended,
-#                 .pred_round) %>%
-#       select(.estimate),
-#    "recall" = 
-#       recall(rand_forest.model.fit.PREDICTIONS.classification,
-#              num_appointments_attended,
-#              .pred_round) %>%
-#       select(.estimate)
-# ) %>%
-#    unnest() %>%
-#    kable()
-# 
-# rand_forest.model.fit.PREDICTIONS.classification %>%
-#    f_meas(num_appointments_attended,
-#           .pred_round) %>%
-#    select(-.estimator) %>%
-#    kable()
-#    
-# ### Confusion matrix, data are classes
-# rand_forest.model.fit.PREDICTIONS.classification %>% 
-#    conf_mat(num_appointments_attended, .pred_round) %>%
-#    pluck(1) %>%
-#    as_tibble() %>%
-#    ggplot(aes(Prediction, Truth, alpha = n)) +
-#    geom_tile(show.legend = FALSE) +
-#    geom_text(aes(label = n), colour = "white", alpha = 1, size = 8)
+OVERALL.variable_importance = NEUTRAL_NUMAPPT.out$variable_importance %>%
+   mutate( analysis = "NEUTRAL" ) %>% 
+   bind_rows( MODERATE_PRIVATE_BIAS_NUMAPPT.out$variable_importance %>% 
+                 mutate( analysis = "PRIVATE_BIAS") ) %>% 
+   bind_rows( MODERATE_PUBLIC_BIAS_NUMAPPT.out$variable_importance %>% 
+                 mutate( analysis = "PUBLIC_BIAS") )
+
+OVERALL.variable_importance.long = OVERALL.variable_importance %>% 
+   pivot_longer( -c("id","analysis"),
+                 names_to  ="variable",
+                 values_to = "importance")
+   
+ggplot( OVERALL.variable_importance.long,
+        aes( x=analysis,
+             y=importance,
+             colour=analysis) ) +
+   geom_boxplot( ) +
+   geom_jitter( ) +
+   facet_wrap( ~variable, scales="free_y" ) +
+   scale_colour_manual( values=analysis_colours ) +
+   theme_bw()
+
+
+ggplot( OVERALL.variable_importance.long,
+        aes( x=variable,
+             y=importance,
+             col=analysis) ) +
+   geom_boxplot( ) +
+   facet_wrap( ~analysis, scales="free_y" ) +
+   geom_point( position = position_jitterdodge() ) +
+   scale_colour_manual( values=analysis_colours ) +
+   theme_bw() +
+   theme( axis.text.x = element_text(angle=90,hjust=1))
+   
+importance_baseline = OVERALL.variable_importance %>% 
+   filter( analysis == "NEUTRAL" )  %>% 
+   pivot_longer( -c("id","analysis"),
+                 names_to  ="variable",
+                 values_to = "importance") %>%
+   group_by( variable ) %>% 
+   summarise( average_baseline = mean( importance ))
+   
+OVERALL.variable_importance_normalised.long = OVERALL.variable_importance.long %>%
+   inner_join( importance_baseline,
+               by="variable" ) %>% 
+   mutate( normalised_importance = log2( importance / average_baseline ) )
+
+ggplot( OVERALL.variable_importance_normalised.long,
+        aes( x=variable,
+             y=normalised_importance,
+             col=analysis) ) +
+   geom_boxplot( ) +
+   facet_wrap( ~analysis, scales="free_y" ) +
+   geom_point( position = position_jitterdodge() ) +
+   scale_colour_manual( values=analysis_colours ) +
+   theme_bw() +
+   theme( axis.text.x = element_text(angle=90,hjust=1))
+
+#####################################################################
+### PERFORMANCE STATISTICS ##########################################
+#####################################################################
+
+### Regression problem
+
+OVERALL.predictions = NEUTRAL_NUMAPPT.out$predictions %>%
+   mutate( analysis = "NEUTRAL" ) %>% 
+   bind_rows( MODERATE_PRIVATE_BIAS_NUMAPPT.out$predictions %>% 
+                 mutate( analysis = "PRIVATE_BIAS") ) %>% 
+   bind_rows( MODERATE_PUBLIC_BIAS_NUMAPPT.out$predictions %>% 
+                 mutate( analysis = "PUBLIC_BIAS") )
+
+OVERALL.predictions.metrics = OVERALL.predictions %>%
+   group_by(analysis) %>% 
+   metrics(truth, prediction)
+
+ggplot( OVERALL.predictions.metrics,
+        aes(x=analysis,
+            y=.estimate,
+            colour=.metric) ) +
+   facet_wrap( ~.metric ) +
+           geom_point() +
+   theme_bw() +
+   theme( axis.text.x = element_text(angle=90,hjust=1))
+
+### Classification problem
+
+OVERALL.predictions.classification = OVERALL.predictions %>% 
+   mutate( prediction.class = floor( prediction ) ) %>% 
+   mutate( prediction.class = factor( prediction.class, levels=0:5  )) %>% 
+   mutate( truth = factor( truth, levels=0:5  ))
+   
+OVERALL.predictions.classification.metrics = OVERALL.predictions.classification %>%
+   group_by( analysis ) %>% 
+   metrics(truth, prediction.class) %>%
+   select(-.estimator) %>% 
+   ### ADD PRECISION
+   bind_rows( OVERALL.predictions.classification %>%
+                 group_by( analysis ) %>% 
+                 precision(truth, prediction.class) %>%
+                 select(-.estimator) ) %>% 
+   ### ADD RECALL
+   bind_rows( OVERALL.predictions.classification %>%
+                group_by( analysis ) %>% 
+                recall(truth, prediction.class) %>% 
+                select( -.estimator ) ) %>% 
+   ### ADD F_MEAS
+   bind_rows( OVERALL.predictions.classification %>%
+                 group_by( analysis ) %>%
+                 f_meas(truth, prediction.class) %>%
+                 select(-.estimator) )
+
+
+ggplot( OVERALL.predictions.classification.metrics,
+        aes(x=analysis,
+            y=.estimate,
+            colour=.metric) ) +
+   facet_wrap( ~.metric, scales="free_y" ) +
+   geom_point() +
+   theme_bw() +
+   theme( axis.text.x = element_text(angle=90,hjust=1))
+
+
+
+OVERALL.predictions.classification.confusion_matrix = OVERALL.predictions.classification %>% 
+   group_by( analysis ) %>% 
+   conf_mat(truth, prediction.class) 
+
+for ( i in nrow( OVERALL.predictions.classification.confusion_matrix ) ) {
+   this.analysis = ( OVERALL.predictions.classification.confusion_matrix %>% 
+      pull( analysis ) )[i]
+   this.cf = ( OVERALL.predictions.classification.confusion_matrix %>% 
+      pull( conf_mat ) )[[ i ]] %>% pluck(1) %>% as_tibble()
+   
+   ggplot( this.cf,
+           aes(Prediction, Truth, alpha = n) ) +
+      geom_tile(show.legend = FALSE) +
+      geom_text(aes(label = n), colour = "white", alpha = 1, size = 8) +
+      ggtitle( this.analysis ) +
+      theme_minimal()
+}
 
 ###
 ### TO DO:
 ### (1) Extract tree
-
-### Extract tree
 ### This should work, but takes a long time!
 ### https://tidypredict.tidymodels.org/articles/rf.html
 # tidypredict_fit(rand_forest.model.fit)
-
+### (2) Do traditional Cox regression
 
 
 
