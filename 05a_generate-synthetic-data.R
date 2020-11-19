@@ -23,22 +23,18 @@ get_distance = function ( id ) {
   return( PATIENT.DATA %>% filter( id == id ) %>% pull(private_distance.ArcPro) ) 
 }
  
-get_SIMD16_Decile_random = function ( id ) {
+get_SIMD16_Decile = function ( id ) {
   return( PATIENT.DATA %>% filter( id == id ) %>% pull(SIMD16_Decile) )
 }
 
-get_SIMD16_Quintile_random = function ( id ) {
+get_SIMD16_Quintile = function ( id ) {
   return( PATIENT.DATA %>% filter( id == id ) %>% pull(SIMD16_Quintile) )
 }
 
-get_SIMD16_Vigintile_random = function ( id ) {
+get_SIMD16_Vigintile = function ( id ) {
   return( PATIENT.DATA %>% filter( id == id ) %>% pull(SIMD16_Vigintile) )
 }
-# 
-# get_private_time_random = function ( id ) {
-#   return( PATIENT.DATA %>% filter( id == id ) %>% pull(private_time.RANDOM) ) 
-# }
-# 
+
 
 rescale = function(x,
                    r_min,
@@ -266,20 +262,16 @@ distance_definition = defDataAdd( varname = "RAW.distance",
 
 SIMD16_Vigintile_definition = defDataAdd( varname = "SIMD16_Vigintile",
                                             dist    = "nonrandom",
-                                            formula = "get_SIMD16_Vigintile_random(idnum)" )
+                                            formula = "get_SIMD16_Vigintile(idnum)" )
 
 SIMD16_Decile_definition = defDataAdd( varname = "SIMD16_Decile",
                                           dist    = "nonrandom",
-                                          formula = "get_SIMD16_Decile_random(idnum)" )
+                                          formula = "get_SIMD16_Decile(idnum)" )
 
 SIMD16_Quintile_definition = defDataAdd( varname = "SIMD16_Quintile",
                                           dist    = "nonrandom",
-                                          formula = "get_SIMD16_Quintile_random(idnum)" )
+                                          formula = "get_SIMD16_Quintile(idnum)" )
 
-# 
-# private_time_definition_RANDOM = defDataAdd( varname = "RAW.private_time_random",
-#                                              dist    = "nonrandom",
-#                                              formula = "get_private_time_random(idnum)" )
 
 ### Let's say we know that the relationship between
 ### distance (x axis) and the likelihood of attendance
