@@ -15,7 +15,7 @@ library( RColorBrewer )
 # library( future ) # parallel processing & decrease computation time
 # library( xgboost ) # boosted trees
 
-load( "dat/06a_LEARNING-DATASET_n=1912.Rdat" )
+load( "dat/06a_LEARNING-DATASET_n=1912_NEW.Rdat" )
 
 analysis_colours = c(
    NEUTRAL = grey(0.3),
@@ -27,11 +27,10 @@ analysis_colours = c(
 ### https://towardsdatascience.com/modelling-with-tidymodels-and-parsnip-bae2c01c131c
 
 
-data = NEUTRAL.d %>% ungroup()
+# data = NEUTRAL.d %>% ungroup()
 
 rand_forest.model = rand_forest(trees = 200, min_n = 5) %>% 
    set_engine( "ranger",
-               verbose = TRUE,
                importance = "impurity") %>% 
    set_mode( "regression" )
 
@@ -176,7 +175,7 @@ DEFAULT.predictor_variables = quos( age,
 ### (2) Graph of performance statistics
 ### (3) Graph of variable importance
 
-NEUTRAL_NUMAPPT.out = perform_random_forest_analysis( data  = NEUTRAL.d,
+NEUTRAL_NUMAPPT.out = perform_random_forest_analysis( data  = NEUTRAL.d.RANDOM,
                                                       model = rand_forest.model,
                                                       predictor_variables = DEFAULT.predictor_variables,
                                                       target_variable = quo(num_appointments_attended)
@@ -283,62 +282,60 @@ ggplot( OVERALL.predictions.metrics,
    theme_bw() +
    theme( axis.text.x = element_text(angle=90,hjust=1))
 
-### Classification problem
-
-OVERALL.predictions.classification = OVERALL.predictions %>% 
-   mutate( prediction.class = floor( prediction ) ) %>% 
-   mutate( prediction.class = factor( prediction.class, levels=0:5  )) %>% 
-   mutate( truth = factor( truth, levels=0:5  ))
-   
-OVERALL.predictions.classification.metrics = OVERALL.predictions.classification %>%
-   group_by( analysis ) %>% 
-   metrics(truth, prediction.class) %>%
-   select(-.estimator) %>% 
-   ### ADD PRECISION
-   bind_rows( OVERALL.predictions.classification %>%
-                 group_by( analysis ) %>% 
-                 precision(truth, prediction.class) %>%
-                 select(-.estimator) ) %>% 
-   ### ADD RECALL
-   bind_rows( OVERALL.predictions.classification %>%
-                group_by( analysis ) %>% 
-                recall(truth, prediction.class) %>% 
-                select( -.estimator ) ) %>% 
-   ### ADD F_MEAS
-   bind_rows( OVERALL.predictions.classification %>%
-                 group_by( analysis ) %>%
-                 f_meas(truth, prediction.class) %>%
-                 select(-.estimator) )
-
-
-ggplot( OVERALL.predictions.classification.metrics,
-        aes(x=analysis,
-            y=.estimate,
-            colour=.metric) ) +
-   facet_wrap( ~.metric, scales="free_y" ) +
-   geom_point() +
-   theme_bw() +
-   theme( axis.text.x = element_text(angle=90,hjust=1))
-
-
-
-OVERALL.predictions.classification.confusion_matrix = OVERALL.predictions.classification %>% 
-   group_by( analysis ) %>% 
-   conf_mat(truth, prediction.class) 
-
-for ( i in nrow( OVERALL.predictions.classification.confusion_matrix ) ) {
-   this.analysis = ( OVERALL.predictions.classification.confusion_matrix %>% 
-      pull( analysis ) )[i]
-   this.cf = ( OVERALL.predictions.classification.confusion_matrix %>% 
-      pull( conf_mat ) )[[ i ]] %>% pluck(1) %>% as_tibble()
-   
-   ggplot( this.cf,
-           aes(Prediction, Truth, alpha = n) ) +
-      geom_tile(show.legend = FALSE) +
-      geom_text(aes(label = n), colour = "white", alpha = 1, size = 8) +
-      ggtitle( this.analysis ) +
-      theme_minimal()
-}
+# ### Classification problem
+# 
+# OVERALL.predictions.classification = OVERALL.predictions %>% 
+#    mutate( prediction.class = floor( prediction ) ) %>% 
+#    mutate( prediction.class = factor( prediction.class, levels=0:5  )) %>% 
+#    mutate( truth = factor( truth, levels=0:5  ))
+#    
+# OVERALL.predictions.classification.metrics = OVERALL.predictions.classification %>%
+#    group_by( analysis ) %>% 
+#    metrics(truth, prediction.class) %>%
+#    select(-.estimator) %>% 
+#    ### ADD PRECISION
+#    bind_rows( OVERALL.predictions.classification %>%
+#                  group_by( analysis ) %>% 
+#                  precision(truth, prediction.class) %>%
+#                  select(-.estimator) ) %>% 
+#    ### ADD RECALL
+#    bind_rows( OVERALL.predictions.classification %>%
+#                 group_by( analysis ) %>% 
+#                 recall(truth, prediction.class) %>% 
+#                 select( -.estimator ) ) %>% 
+#    ### ADD F_MEAS
+#    bind_rows( OVERALL.predictions.classification %>%
+#                  group_by( analysis ) %>%
+#                  f_meas(truth, prediction.class) %>%
+#                  select(-.estimator) )
+# 
+# 
+# ggplot( OVERALL.predictions.classification.metrics,
+#         aes(x=analysis,
+#             y=.estimate,
+#             colour=.metric) ) +
+#    facet_wrap( ~.metric, scales="free_y" ) +
+#    geom_point() +
+#    theme_bw() +
+#    theme( axis.text.x = element_text(angle=90,hjust=1))
+# 
+# OVERALL.predictions.classification.confusion_matrix = OVERALL.predictions.classification %>% 
+#    group_by( analysis ) %>% 
+#    conf_mat(truth, prediction.class) 
+# 
+# for ( i in nrow( OVERALL.predictions.classification.confusion_matrix ) ) {
+#    this.analysis = ( OVERALL.predictions.classification.confusion_matrix %>% 
+#       pull( analysis ) )[i]
+#    this.cf = ( OVERALL.predictions.classification.confusion_matrix %>% 
+#       pull( conf_mat ) )[[ i ]] %>% pluck(1) %>% as_tibble()
+#    
+#    ggplot( this.cf,
+#            aes(Prediction, Truth, alpha = n) ) +
+#       geom_tile(show.legend = FALSE) +
+#       geom_text(aes(label = n), colour = "white", alpha = 1, size = 8) +
+#       ggtitle( this.analysis ) +
+#       theme_minimal()
+# }
 
 ###
 ### TO DO:
