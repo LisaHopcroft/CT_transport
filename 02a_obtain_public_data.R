@@ -1,6 +1,7 @@
 library( magrittr )
 library( stringr )
 library( dplyr )
+library( RCurl )
 
 load("dat/01a_RANDOM-POSTCODES_NEW_n=2000.Rdat")
 

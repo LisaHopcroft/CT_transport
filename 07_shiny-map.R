@@ -19,7 +19,7 @@ load( "dat/00_PREPARATION.Rdat" )
 load( "dat/05a_SYNTHETIC-DATA_n=1958.Rdat")
 
 trial_data = postcode_holder %>% 
-    inner_join( trial_data.synthetic.LOADED )
+    inner_join( trial_data.synthetic )
 
 metric_list = trial_data %>% colnames %>%
     keep( ~str_detect(.x, "^METRIC_") )

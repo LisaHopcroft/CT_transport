@@ -85,6 +85,9 @@ ggplot( TRAVEL.data,
         subtitle="Identity indicated by dashed blue line")
 
 
+ggsave( file="fig/ArcPro_OSRM.correlation.png",
+        dpi = 200 )
+
 ### Correlation between travel time and travel distance
 
 upper_limit = max( TRAVEL.data$private_distance.ArcPro ) %>% round_any( 5 )
@@ -99,6 +102,7 @@ ggplot( TRAVEL.data,
   geom_smooth(method="lm") +
   xlab( "Drive time (ArcPro)" ) +
   ylab( "Drive distance (ArcPro)" ) +
+  coord_fixed() +
   annotate( "text",
             x=0, y=upper_limit,
             label = sprintf( "r=%.2f", ArcPro_time_distance.correlation ),
@@ -130,6 +134,9 @@ ggplot( TRAVEL.data,
             hjust=0, vjust=1 ) +
   labs( title="Travel time (ArcPro v BJP)",
         subtitle="Identity indicated by dashed blue line")
+
+ggsave( file="fig/PUBLIC_PRIVATE.correlation.png",
+        dpi = 200 )
 
 PATIENT.DATA = postcode_holder %>%
   inner_join( TRAVEL.data, by="postcode" ) %>% 

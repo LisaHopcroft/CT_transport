@@ -3,13 +3,13 @@ library( magrittr )
 library( ggplot2  )
 # library( stringr  )
 library( purrr    )
-library(tidypredict)
-library(tibble)
-library(corrplot)
+library( tidypredict )
+library( tibble )
+library( corrplot )
 library( tidymodels )
 # library( rules )
 library( knitr )
-library( rpart.plot )
+# library( rpart.plot )
 library( RColorBrewer )
 # library( baguette ) # bagged trees
 # library( future ) # parallel processing & decrease computation time
@@ -221,6 +221,9 @@ ggplot( OVERALL.variable_importance.long,
    scale_colour_manual( values=analysis_colours ) +
    theme_bw()
 
+ggsave( file = "fig/OVERALL.variable_importance.long_1.png",
+        dpi = 200 )
+
 
 ggplot( OVERALL.variable_importance.long,
         aes( x=variable,
@@ -233,6 +236,9 @@ ggplot( OVERALL.variable_importance.long,
    theme_bw() +
    theme( axis.text.x = element_text(angle=90,hjust=1))
    
+ggsave( file = "fig/OVERALL.variable_importance.long_2.png",
+        dpi = 200 )
+
 importance_baseline = OVERALL.variable_importance %>% 
    filter( analysis == "NEUTRAL" )  %>% 
    pivot_longer( -c("id","analysis"),
@@ -256,6 +262,9 @@ ggplot( OVERALL.variable_importance_normalised.long,
    scale_colour_manual( values=analysis_colours ) +
    theme_bw() +
    theme( axis.text.x = element_text(angle=90,hjust=1))
+
+ggsave( file = "fig/OVERALL.variable_importance.long_3.png",
+        dpi = 200 )
 
 #####################################################################
 ### PERFORMANCE STATISTICS ##########################################
@@ -282,6 +291,10 @@ ggplot( OVERALL.predictions.metrics,
            geom_point() +
    theme_bw() +
    theme( axis.text.x = element_text(angle=90,hjust=1))
+
+
+ggsave( file = "fig/OVERALL.predictions.metrics_REGRESSION.png",
+        dpi = 200 )
 
 ### Classification problem
 
