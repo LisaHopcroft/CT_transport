@@ -4,6 +4,8 @@ dat/*
 ref/*
 dev/*
 BJP/*
+fig/*
+*.docx
 
 # History files
 .Rhistory

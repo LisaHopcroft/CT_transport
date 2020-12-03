@@ -150,13 +150,22 @@ for ( i in 1:nrow( subsets_to_generate ) ) {
 
 number_of_participants = nrow( EXTREME_PUBLIC_BIAS.d )
 
+# Randomize the data in neutral.
+NEUTRAL.d.RANDOM = NEUTRAL.d %>% 
+  ungroup() %>% 
+  mutate( age = sample( age ) ) %>% 
+  mutate( RAW.public_time  = sample( RAW.public_time  ) ) %>% 
+  mutate( RAW.private_time = sample( RAW.private_time ) ) %>% 
+  mutate( RAW.distance     = sample( RAW.distance ) )
+
 save( trial_data.synthetic,
       EXTREME_PUBLIC_BIAS.d,
       EXTREME_PRIVATE_BIAS.d,
       MODERATE_PUBLIC_BIAS.d,
       MODERATE_PRIVATE_BIAS.d,
       NEUTRAL.d,
+      NEUTRAL.d.RANDOM,
       number_of_participants,
       timepoint.list,
-      file=sprintf( "dat/06a_LEARNING-DATASET_n=%d.Rdat",
+      file=sprintf( "dat/06a_LEARNING-DATASET_n=%d_NEW.Rdat",
                     number_of_participants ) )
