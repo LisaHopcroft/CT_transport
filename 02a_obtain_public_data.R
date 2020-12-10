@@ -2,8 +2,11 @@ library( magrittr )
 library( stringr )
 library( dplyr )
 library( RCurl )
+library( httr )
+library( PostcodesioR )
 
 load("dat/01a_RANDOM-POSTCODES_NEW_n=2000.Rdat")
+load("dat/API_KEY.Rdat")
 
 
 BASE_QUERY_STRING = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:v4=\"http://Livetravelsuite.trapezegroup.co.uk/v4-4\" xmlns:sch=\"http://xml.trapezegroup.co.uk/schemas\">
@@ -68,8 +71,6 @@ generate_SOAP_query = function( request_id,
 
 
 API_URL = "https://api-2445581400627.apicast.io:443/travelsuite-webservice/services/v4/?WSDL"
-API_KEY = "a1fe53720f5c5261d2043dbab2775c45"
-
 
 
 ### HOSPITAL
@@ -84,11 +85,12 @@ XML_tracker = postcode_holder %>%
   select( idnum, postcode ) %>% 
   mutate( SUCCESS = NA )
 
+
 for ( i in 1:nrow( postcode_holder %>% filter( group == "Participant" ) ) ) {
   
   origin_postcode = (postcode_holder %>% pull(postcode)) [i]
   
-  journey.file = sprintf( "dat/BJP_XML/BJP_%04i_%s_%s.xml",
+  journey.file = sprintf( "dat/BJP_XML_TEST/BJP_%04i_%s_%s.xml",
                           i,
                           origin_postcode %>% str_replace(" ", ""),
                           destination_postcode %>% str_replace(" ", "") )
@@ -99,26 +101,46 @@ for ( i in 1:nrow( postcode_holder %>% filter( group == "Participant" ) ) ) {
     origin_postcode.eastings = origin_postcode.info$eastings %>% as.character()
     origin_postcode.northings = origin_postcode.info$northings %>% as.character()
     
-    h = basicTextGatherer()
     
-    curl.out = curlPerform(url = API_URL,
-                              httpheader = headerFields,
-                              postfields = generate_SOAP_query(
-                                request_id = sprintf( "%s -> %s",
-                                                      origin_postcode,
-                                                      destination_postcode),
-                                origin_easting = origin_postcode.eastings,
-                                origin_northing = origin_postcode.northings,
-                                destination_easting = destination_postcode.eastings ,
-                                destination_northing = destination_postcode.northings,
-                                arrival_time = "2020-11-03T13:00:00"
-                              ),
-                              writefunction = h$update
-    )
+    # h = basicTextGatherer()
+    # 
+    # curl.out = curlPerform(url = API_URL,
+    #                           httpheader = headerFields,
+    #                           postfields = generate_SOAP_query(
+    #                             request_id = sprintf( "%s -> %s",
+    #                                                   origin_postcode,
+    #                                                   destination_postcode),
+    #                             origin_easting = origin_postcode.eastings,
+    #                             origin_northing = origin_postcode.northings,
+    #                             destination_easting = destination_postcode.eastings ,
+    #                             destination_northing = destination_postcode.northings,
+    #                             arrival_time = "2020-11-03T13:00:00"
+    #                           ),
+    #                           writefunction = h$update
+    # )
 
-    fileConn<-file(journey.file)
-    writeLines(h$value(), fileConn)
-    close(fileConn)
+    post_response = httr::POST( API_URL,
+                                httr::add_headers(user_key = API_KEY),
+                                body=generate_SOAP_query(request_id = sprintf( "%s -> %s",
+                                                                               origin_postcode,
+                                                                               destination_postcode),
+                                                         origin_easting = origin_postcode.eastings,
+                                                         origin_northing = origin_postcode.northings,
+                                                         destination_easting = destination_postcode.eastings ,
+                                                         destination_northing = destination_postcode.northings,
+                                                         arrival_time = "2020-11-03T13:00:00"
+                                ) )
+    
+    post_response.xml = httr::content( post_response, as = "parsed" )
+    
+
+    # fileConn<-file(journey.file)
+    # writeLines(h$value(), fileConn)
+    # close(fileConn)
+    
+    xml2::write_xml( x=post_response.xml,
+                     file=journey.file,
+                     as="xml" )
     
     cat( sprintf( "[%04d] %8s : XML written to [%s]\n",
                   i,
