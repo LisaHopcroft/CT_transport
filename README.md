@@ -19,3 +19,20 @@ The overarching aim is to define a workflow for incorporating geospatial informa
 The ultimate aim is to use these these data and the resulting modelling techniques to ask the question _which patients are at high risk of dropping out?_  If trials units can predict this with confidence then we may be able to intervene early and maintain participant retention.
 
 Completed as part of the [Data Science Accelerator Programme](https://www.thedatalab.com/news/data-science-accelerator-programme/) 2020.
+
+Notes for using this code yourself
+----------------------------------
+
+If you want to access Scottish public transport information via the Bulk Journey Planner
+(methodology in 02a_obtain_public_data.R), then you will need to create an account for yourself
+at [Traveline Scotland's Bulk Journey Planner website](https://www.travelinescotland.com/bulk-journey-planner).
+Once registered, you will receive an API key that will allow you to query the server.
+
+In this pipeline, my API key is saved as a variable `API_KEY` in the file `dat/API_KEY.Rdat`,
+for example:
+
+`API_KEY="randomlistofnumbersandletters"`
+
+You can save your API_KEY in the same way (this allows you to keep it private when
+uploading to Github), or you can include it as a variable in the script where you 
+access the API.
